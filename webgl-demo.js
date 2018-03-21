@@ -5,6 +5,7 @@ var pause = 1;
 var frames = 0;
 var level_frames = 1200;
 var score = 0;
+var game_over = 0;
 
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
@@ -491,6 +492,7 @@ function main() {
         obstacles[i].rotationZ += obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
+    if(!detect_collision(shapes, obstacles))
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
@@ -514,6 +516,19 @@ function print_data(deltaTime){
     speed = Math.round(1 / deltaTime * 100)/100;
     element = document.getElementById("speed");
     element.innerHTML = "speed: " + speed.toString();
+}
+
+function detect_collision(shapes, obstacles){
+    for (var i = 0; i < count_obstacles; i++){
+        if(obstacles[i].position[2] > -0.5){
+            var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / (2 * Math.PI)) * 2 * Math.PI;
+            var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / (2 * Math.PI)) * 2 * Math.PI;
+            if(Math.abs(theta - alpha) <= 2 * Math.PI / 8){
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // Dictionary that keeps the track of the status of keys
