@@ -1,6 +1,10 @@
 var level = 1;
-var speed_level = [0, 7];
+var max_level = 2;
+var speed_level = [0, 3, 5];
 var pause = 1;
+var frames = 0;
+var level_frames = 1200;
+var score = 0;
 
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
@@ -241,7 +245,7 @@ function create_cuboid(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)) / speed_level[level],}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
 function create_2triangles(){
@@ -349,7 +353,7 @@ function create_2triangles(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)) / speed_level[level],}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
 var count_shapes = 10;
@@ -466,6 +470,11 @@ function main() {
     // requestAnimationFrame(render);
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
+    frames++;
+    if(frames % level_frames == 0){
+        level = Math.min(level + 1, max_level);
+    }
+    print_data(deltaTime);
     // console.log("deltaTime");
     // console.log(deltaTime);
     then = now;
@@ -493,6 +502,19 @@ function main() {
 // Initialize the buffers we'll need. For this demo, we just
 // have one object -- a simple three-dimensional cube.
 //
+
+function print_data(deltaTime){
+    var element = document.getElementById("frames");
+    element.innerHTML = "frames: " + frames.toString();
+    element = document.getElementById("level");
+    element.innerHTML = "level: " + level.toString();
+    score = Math.round(60 * frames / 60 * 100)/100;
+    element = document.getElementById("score");
+    element.innerHTML = "score: " + score.toString();
+    speed = Math.round(1 / deltaTime * 100)/100;
+    element = document.getElementById("speed");
+    element.innerHTML = "speed: " + speed.toString();
+}
 
 // Dictionary that keeps the track of the status of keys
 var statusKeys = {};
@@ -533,20 +555,20 @@ function handleKeys(shapes, obstacles){
         if(statusKeys[37]){
             // Left Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].rotationZ -= shapes[i].rotation;
+                shapes[i].rotationZ += shapes[i].rotation;
             }
-            // for(var i = 0; i < count_obstacles; i++){
-            //     obstacles[i].rotationZ -= obstacles[i].rotation;
-            // }
+            for(var i = 0; i < count_obstacles; i++){
+                obstacles[i].rotationZ += shapes[0].rotation;
+            }
         }
         if(statusKeys[39]){
             // Right Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].rotationZ += shapes[i].rotation;
+                shapes[i].rotationZ -= shapes[i].rotation;
             }
-            // for(var i = 0; i < count_obstacles; i++){
-            //     obstacles[i].rotationZ += obstacles[i].rotation;
-            // }
+            for(var i = 0; i < count_obstacles; i++){
+                obstacles[i].rotationZ -= shapes[0].rotation;
+            }
         }
         if(statusKeys[87]){
             // W Key
