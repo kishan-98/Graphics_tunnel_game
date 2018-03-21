@@ -1,3 +1,7 @@
+var level = 1;
+var speed_level = [0, 7];
+var pause = 1;
+
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
@@ -237,7 +241,7 @@ function create_cuboid(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : type * Math.PI / 2.5,}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)) / speed_level[level],}
 }
 
 function create_2triangles(){
@@ -345,7 +349,7 @@ function create_2triangles(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : type * Math.PI / 2.5,}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)) / speed_level[level],}
 }
 
 var count_shapes = 10;
@@ -470,11 +474,11 @@ function main() {
     handleKeys(shapes, obstacles);
     const projectionMatrix = clearScene(gl);
     for (var i = 0; i < count_shapes; i++){
-        shapes[i].position[2] += shapes[i].speed * deltaTime;
+        shapes[i].position[2] += pause * shapes[i].speed * deltaTime;
         drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
     }
     for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[2] += obstacles[i].speed * deltaTime;
+        obstacles[i].position[2] += pause * obstacles[i].speed * deltaTime;
         obstacles[i].rotationZ += obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
@@ -498,67 +502,74 @@ function handleKeyDown(event){
 }
 
 function handleKeyUp(event){
-    statusKeys[event.keyCode] = false;
+    if(event.keyCode == 80){
+        pause = 1 - pause;
+    }
+    else{
+        statusKeys[event.keyCode] = false;
+    }
 }
 
 function handleKeys(shapes, obstacles){
-    if(statusKeys[38]){
-        // Up Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].position[2] += 0.5;
+    if(pause){
+        if(statusKeys[38]){
+            // Up Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].position[2] += 0.5;
+            }
+            for(var i = 0; i < count_obstacles; i++){
+                obstacles[i].position[2] += 0.5;
+            }
         }
-        for(var i = 0; i < count_obstacles; i++){
-            obstacles[i].position[2] += 0.5;
+        if(statusKeys[40]){
+            // Down Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].position[2] -= 0.5;
+            }
+            for(var i = 0; i < count_obstacles; i++){
+                obstacles[i].position[2] -= 0.5;
+            }
         }
-    }
-    if(statusKeys[40]){
-        // Down Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].position[2] -= 0.5;
+        if(statusKeys[37]){
+            // Left Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].rotationZ -= shapes[i].rotation;
+            }
+            // for(var i = 0; i < count_obstacles; i++){
+            //     obstacles[i].rotationZ -= obstacles[i].rotation;
+            // }
         }
-        for(var i = 0; i < count_obstacles; i++){
-            obstacles[i].position[2] -= 0.5;
+        if(statusKeys[39]){
+            // Right Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].rotationZ += shapes[i].rotation;
+            }
+            // for(var i = 0; i < count_obstacles; i++){
+            //     obstacles[i].rotationZ += obstacles[i].rotation;
+            // }
         }
-    }
-    if(statusKeys[37]){
-        // Left Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].rotationZ -= shapes[i].rotation;
+        if(statusKeys[87]){
+            // W Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].rotationX -= shapes[i].rotation;
+                shapes[i].position[2] -= 0.1;
+            }
+            // for(var i = 0; i < count_obstacles; i++){
+            //     obstacles[i].rotationX -= obstacles[i].rotation;
+            //     obstacles[i].position[2] -= 0.1;
+            // }
         }
-        // for(var i = 0; i < count_obstacles; i++){
-        //     obstacles[i].rotationZ -= obstacles[i].rotation;
-        // }
-    }
-    if(statusKeys[39]){
-        // Right Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].rotationZ += shapes[i].rotation;
+        if(statusKeys[83]){
+            // S Key
+            for(var i = 0; i < count_shapes; i++){
+                shapes[i].rotationX += shapes[i].rotation;
+                shapes[i].position[2] += 0.1;
+            }
+            // for(var i = 0; i < count_obstacles; i++){
+            //     obstacles[i].rotationX += obstacles[i].rotation;
+            //     obstacles[i].position[2] += 0.1;
+            // }
         }
-        // for(var i = 0; i < count_obstacles; i++){
-        //     obstacles[i].rotationZ += obstacles[i].rotation;
-        // }
-    }
-    if(statusKeys[87]){
-        // W Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].rotationX -= shapes[i].rotation;
-            shapes[i].position[2] -= 0.1;
-        }
-        // for(var i = 0; i < count_obstacles; i++){
-        //     obstacles[i].rotationX -= obstacles[i].rotation;
-        //     obstacles[i].position[2] -= 0.1;
-        // }
-    }
-    if(statusKeys[83]){
-        // S Key
-        for(var i = 0; i < count_shapes; i++){
-            shapes[i].rotationX += shapes[i].rotation;
-            shapes[i].position[2] += 0.1;
-        }
-        // for(var i = 0; i < count_obstacles; i++){
-        //     obstacles[i].rotationX += obstacles[i].rotation;
-        //     obstacles[i].position[2] += 0.1;
-        // }
     }
 }
 
