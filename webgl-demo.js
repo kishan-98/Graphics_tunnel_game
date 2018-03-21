@@ -6,6 +6,8 @@ var frames = 0;
 var level_frames = 1200;
 var score = 0;
 var game_over = 0;
+var amplitude = 0.007;
+var current_rotation = 0;
 
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
@@ -466,6 +468,26 @@ function main() {
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
 
+  var theta = 0;
+  // Draw the scene repeatedly
+  function shakey_screen(now) {
+    // requestAnimationFrame(render);
+    frames++;
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+    const projectionMatrix = clearScene(gl);
+    for (var i = 0; i < count_shapes; i++){
+        shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+    }
+    for (var i = 0; i < count_obstacles; i++){
+        obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+        drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
+    }
+    requestAnimationFrame(shakey_screen);
+  }
+
   // Draw the scene repeatedly
   function render(now) {
     // requestAnimationFrame(render);
@@ -492,8 +514,13 @@ function main() {
         obstacles[i].rotationZ += obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
-    if(!detect_collision(shapes, obstacles))
-    requestAnimationFrame(render);
+    if(!detect_collision(shapes, obstacles)){
+        requestAnimationFrame(render);
+    }
+    else{
+        frames = 0;
+        shakey_screen(gl, shapes, buffer_shapes, obstacles, buffer_obstacles);
+    }
   }
   requestAnimationFrame(render);
 }
@@ -521,11 +548,17 @@ function print_data(deltaTime){
 function detect_collision(shapes, obstacles){
     for (var i = 0; i < count_obstacles; i++){
         if(obstacles[i].position[2] > -0.5){
-            var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / (2 * Math.PI)) * 2 * Math.PI;
-            var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / (2 * Math.PI)) * 2 * Math.PI;
-            if(Math.abs(theta - alpha) <= 2 * Math.PI / 8){
+            var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / Math.PI) * Math.PI;
+            var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
+            if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
                 return true;
             }
+            // theta = theta*180/Math.PI;
+            // alpha = alpha*180/Math.PI;
+            // var element = document.getElementById("alpha");
+            // element.innerHTML = "alpha: " + alpha.toString();
+            // element = document.getElementById("theta");
+            // element.innerHTML = "theta: " + theta.toString();
         }
     }
     return false;
@@ -540,7 +573,17 @@ function handleKeyDown(event){
 
 function handleKeyUp(event){
     if(event.keyCode == 80){
+        // P Key
         pause = 1 - pause;
+    }
+    else if(event.keyCode == 74){
+        // J Key
+        for(var i = 0; i < count_shapes; i++){
+            shapes[i].rotationZ += Math.PI;
+        }
+        for(var i = 0; i < count_obstacles; i++){
+            obstacles[i].rotationZ += Math.PI;
+        }
     }
     else{
         statusKeys[event.keyCode] = false;
@@ -552,19 +595,19 @@ function handleKeys(shapes, obstacles){
         if(statusKeys[38]){
             // Up Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].position[2] += 0.5;
+                shapes[i].position[2] += 0.5;//shapes[i].speed / 60;
             }
             for(var i = 0; i < count_obstacles; i++){
-                obstacles[i].position[2] += 0.5;
+                obstacles[i].position[2] += 0.5;//obstacles[i].speed / 60;
             }
         }
         if(statusKeys[40]){
             // Down Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].position[2] -= 0.5;
+                shapes[i].position[2] -= 0.5;//shapes[i].speed / 60;
             }
             for(var i = 0; i < count_obstacles; i++){
-                obstacles[i].position[2] -= 0.5;
+                obstacles[i].position[2] -= 0.5;//obstacles[i].speed / 60;
             }
         }
         if(statusKeys[37]){
@@ -585,6 +628,15 @@ function handleKeys(shapes, obstacles){
                 obstacles[i].rotationZ -= shapes[0].rotation;
             }
         }
+        // if(statusKeys[32]){
+        //     // Space Key
+        //     for(var i = 0; i < count_shapes; i++){
+        //         shapes[i].rotationZ += Math.PI;
+        //     }
+        //     for(var i = 0; i < count_obstacles; i++){
+        //         obstacles[i].rotationZ += Math.PI;
+        //     }
+        // }
         if(statusKeys[87]){
             // W Key
             for(var i = 0; i < count_shapes; i++){
