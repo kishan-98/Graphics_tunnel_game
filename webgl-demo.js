@@ -172,6 +172,7 @@ function create_octagon1(){
 
 function create_cuboid(){
     var len = Math.tan(Math.PI/8)/3, height = 1.0, wid = Math.tan(Math.PI/8)/50;
+    var type = Math.floor(Math.random()*2)*2 - 1;
     return {'position'  : [0, 0, -20],
     'positions' : [
       // Right face
@@ -236,11 +237,12 @@ function create_cuboid(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : Math.PI / 2.5,}
+    'rotation'  : type * Math.PI / 2.5,}
 }
 
 function create_2triangles(){
     var len = Math.tan(Math.PI/8), height = 1.0, wid = Math.tan(Math.PI/8)/50;
+    var type = Math.floor(Math.random()*2)*2 - 1;
     return {'position'  : [0, 0, -20],
     'positions' : [
       // Top triangle
@@ -343,7 +345,7 @@ function create_2triangles(){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7,
-    'rotation'  : Math.PI / 2.5,}
+    'rotation'  : type * Math.PI / 2.5,}
 }
 
 var count_shapes = 10;
