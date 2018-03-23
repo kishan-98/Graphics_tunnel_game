@@ -506,11 +506,11 @@ function main() {
     handleKeys(shapes, obstacles);
     const projectionMatrix = clearScene(gl);
     for (var i = 0; i < count_shapes; i++){
-        shapes[i].position[2] += pause * shapes[i].speed * deltaTime;
+        // shapes[i].position[2] += pause * shapes[i].speed * deltaTime;
         drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
     }
     for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[2] += pause * obstacles[i].speed * deltaTime;
+        // obstacles[i].position[2] += pause * obstacles[i].speed * deltaTime;
         obstacles[i].rotationZ += obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
