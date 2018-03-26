@@ -392,7 +392,7 @@ function main() {
 
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-      vColor = aVertexColor;
+      vColor = vec4(1.0, 1.0, 1.0, 1.0);
     }
   `;
 
@@ -802,7 +802,7 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
 }
 
 function clearScene(gl){
-    gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to black, fully opaque
+    gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to gray, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
