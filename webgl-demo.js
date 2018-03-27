@@ -386,16 +386,19 @@ function main() {
     attribute vec4 aVertexColor;
     attribute vec3 aNormal;
 
-    uniform mat4 uModelViewMatrix;
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     varying lowp vec4 vColor;
     varying lowp vec3 vNormal;
+    varying lowp vec3 vView;
 
     void main(void) {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+      gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
       vColor = aVertexColor;
-      vNormal = aNormal;
+      vNormal = vec3(uModelMatrix) * aNormal;
+      vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
     }
   `;
 
@@ -404,24 +407,26 @@ function main() {
   const fsSource = `
     varying lowp vec4 vColor;
     varying lowp vec3 vNormal;
+    varying lowp vec3 vView;
 
     precision lowp float;
 
-    const vec3 source_ambient_color = vec3(0.3, 1.0, 0.5);
-    const vec3 source_diffuse_color = vec3(1.0, 2.0, 4.0);
-    const vec3 source_specular_color = vec3(1.0, 1.0, 1.0);
-    const vec3 source_direction = vec3(0.0, 0.0, 1.0);
-
-    const vec3 mat_ambient_color = vec3(0.5, 0.5, 0.5);
-    const vec3 mat_diffuse_color = vec3(1.0, 1.0, 1.0);
-    const vec3 mat_specular_color = vec3(1.0, 1.0, 1.0);
-    const float mat_shininess = 10.0;
-
     void main(void) {
-        vec3 I_ambient = source_ambient_color*mat_ambient_color;
-        vec3 I_diffuse = source_diffuse_color*mat_diffuse_color*max(0.0, dot(vNormal, source_direction));
+        vec3 source_ambient_color = vec3(0.0, 0.2, 0.0);
+        vec3 source_diffuse_color = vec3(1.0, 1.0, 1.0);
+        vec3 source_specular_color = vec3(0.0, 1.0, 0.0);
+        vec3 source_direction = vec3(0.0, 0.0, -1.0);
+
+        vec3 mat_ambient_color = vColor.xyz;
+        vec3 mat_diffuse_color = vColor.xyz;
+        vec3 mat_specular_color = vColor.xyz;
+        float mat_shininess = 10.0;
+
+        vec3 I_ambient = source_ambient_color * mat_ambient_color;
+        vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, dot(vNormal, source_direction));
         vec3 R = reflect(source_direction, vNormal);
-        vec3 I_specular = source_specular_color*mat_specular_color*pow(max(dot(R,V),0.0), mat_shininess);
+        vec3 V = normalize(vView);
+        vec3 I_specular = source_specular_color*mat_specular_color*pow(max(dot(R,V), 0.0), mat_shininess);
         vec3 I = I_ambient + I_diffuse + I_specular;
         gl_FragColor = vec4(I, 1.0)*vColor;
         // gl_FragColor = vColor;
@@ -445,7 +450,8 @@ function main() {
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+      modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
     },
   };
 
@@ -876,24 +882,30 @@ function initBuffers(gl, shape) {
 function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime) {
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
-  const modelViewMatrix = mat4.create();
+  const modelMatrix = mat4.create();
+
+  // var camera_position = Vec3(0.0, 0.0, 0.0);
+  // var camera_target = Vec3(0.0, 0.0, 1.0);
+  // var camera_up = Vec3(0.0, 1.0, 0.0);
+
+  const viewMatrix = mat4.create();//mat4.lookAt(camera_position, camera_target, camera_up);
 
   // Now move the drawing position a bit to where we want to
   // start drawing the square.
 
-  mat4.translate(modelViewMatrix,     // destination matrix
-                 modelViewMatrix,     // matrix to translate
+  mat4.translate(modelMatrix,     // destination matrix
+                 modelMatrix,     // matrix to translate
                  shape.position);  // amount to translate
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
+  mat4.rotate(modelMatrix,  // destination matrix
+              modelMatrix,  // matrix to rotate
               shape.rotationX,     // amount to rotate in radians
               [1, 0, 0]);       // axis to rotate around (X)
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
+  mat4.rotate(modelMatrix,  // destination matrix
+              modelMatrix,  // matrix to rotate
               shape.rotationY,// amount to rotate in radians
               [0, 1, 0]);       // axis to rotate around (Y)
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
+  mat4.rotate(modelMatrix,  // destination matrix
+              modelMatrix,  // matrix to rotate
               shape.rotationZ,// amount to rotate in radians
               [0, 0, 1]);       // axis to rotate around (Z)
 
@@ -971,9 +983,13 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       false,
       projectionMatrix);
   gl.uniformMatrix4fv(
-      programInfo.uniformLocations.modelViewMatrix,
+      programInfo.uniformLocations.viewMatrix,
       false,
-      modelViewMatrix);
+      viewMatrix);
+  gl.uniformMatrix4fv(
+      programInfo.uniformLocations.modelMatrix,
+      false,
+      modelMatrix);
 
   {
     const vertexCount = shape.vertexCount;
