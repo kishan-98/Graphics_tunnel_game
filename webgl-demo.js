@@ -384,15 +384,18 @@ function main() {
   const vsSource = `
     attribute vec4 aVertexPosition;
     attribute vec4 aVertexColor;
+    attribute vec3 aNormal;
 
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     varying lowp vec4 vColor;
+    varying lowp vec3 vNormal;
 
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-      vColor = vec4(1.0, 1.0, 1.0, 1.0);
+      vColor = aVertexColor;
+      vNormal = aNormal;
     }
   `;
 
@@ -400,9 +403,28 @@ function main() {
 
   const fsSource = `
     varying lowp vec4 vColor;
+    varying lowp vec3 vNormal;
+
+    precision lowp float;
+
+    const vec3 source_ambient_color = vec3(0.3, 1.0, 0.5);
+    const vec3 source_diffuse_color = vec3(1.0, 2.0, 4.0);
+    const vec3 source_specular_color = vec3(1.0, 1.0, 1.0);
+    const vec3 source_direction = vec3(0.0, 0.0, 1.0);
+
+    const vec3 mat_ambient_color = vec3(0.5, 0.5, 0.5);
+    const vec3 mat_diffuse_color = vec3(1.0, 1.0, 1.0);
+    const vec3 mat_specular_color = vec3(1.0, 1.0, 1.0);
+    const float mat_shininess = 10.0;
 
     void main(void) {
-      gl_FragColor = vColor;
+        vec3 I_ambient = source_ambient_color*mat_ambient_color;
+        vec3 I_diffuse = source_diffuse_color*mat_diffuse_color*max(0.0, dot(vNormal, source_direction));
+        vec3 R = reflect(source_direction, vNormal);
+        vec3 I_specular = source_specular_color*mat_specular_color*pow(max(dot(R,V),0.0), mat_shininess);
+        vec3 I = I_ambient + I_diffuse + I_specular;
+        gl_FragColor = vec4(I, 1.0)*vColor;
+        // gl_FragColor = vColor;
     }
   `;
 
@@ -419,6 +441,7 @@ function main() {
     attribLocations: {
       vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
       vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
+      vertexNormal: gl.getAttribLocation(shaderProgram, 'aNormal'),
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -662,71 +685,6 @@ function handleKeys(shapes, obstacles){
     }
 }
 
-function initBuffers(gl, shape) {
-
-  // Create a buffer for the cube's vertex positions.
-
-  const positionBuffer = gl.createBuffer();
-
-  // Select the positionBuffer as the one to apply buffer
-  // operations to from here out.
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  // Now pass the list of positions into WebGL to build the
-  // shape. We do this by creating a Float32Array from the
-  // JavaScript array, then use it to fill the current buffer.
-
-  const positions = shape.positions;
-
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  // Now set up the colors for the faces. We'll use solid colors
-  // for each face.
-
-  const faceColors = shape.faceColors;
-
-  // Convert the array of colors into a table for all the vertices.
-
-  var colors = [];
-
-  for (var j = 0; j < faceColors.length; ++j) {
-    const c = faceColors[j];
-
-    // Repeat each color numComponentsColor times for the numComponentsColor vertices of the face
-    for (var i = 0; i < shape.numComponentsColor; ++i) {
-        colors = colors.concat(c);
-    }
-  }
-
-  const colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-  // Build the element array buffer; this specifies the indices
-  // into the vertex arrays for each face's vertices.
-
-  const indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-  // This array defines each face as two triangles, using the
-  // indices into the vertex array to specify each triangle's
-  // position.
-
-  const indices = shape.indices;
-
-  // Now send the element array to GL
-
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(indices), gl.STATIC_DRAW);
-
-  return {
-    position: positionBuffer,
-    color: colorBuffer,
-    indices: indexBuffer,
-  };
-}
-
 function refresh_tunnel(gl, shapes, buffers){
     if(shapes.length && shapes[0].position[2] > 1){
         shapes.shift();
@@ -834,6 +792,84 @@ function clearScene(gl){
     return projectionMatrix;
 }
 
+function initBuffers(gl, shape) {
+
+  // Create a buffer for the cube's vertex positions.
+
+  const positionBuffer = gl.createBuffer();
+
+  // Select the positionBuffer as the one to apply buffer
+  // operations to from here out.
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  // Now pass the list of positions into WebGL to build the
+  // shape. We do this by creating a Float32Array from the
+  // JavaScript array, then use it to fill the current buffer.
+
+  const positions = shape.positions;
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  // Create a buffer for the cube's normal positions.
+
+  const normalBuffer = gl.createBuffer();
+
+  // Select the normalBuffer as the one to apply buffer
+  // operations to from here out.
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+  const normals = shape.positions;
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+  // Now set up the colors for the faces. We'll use solid colors
+  // for each face.
+
+  const faceColors = shape.faceColors;
+
+  // Convert the array of colors into a table for all the vertices.
+
+  var colors = [];
+
+  for (var j = 0; j < faceColors.length; ++j) {
+    const c = faceColors[j];
+
+    // Repeat each color numComponentsColor times for the numComponentsColor vertices of the face
+    for (var i = 0; i < shape.numComponentsColor; ++i) {
+        colors = colors.concat(c);
+    }
+  }
+
+  const colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+  // Build the element array buffer; this specifies the indices
+  // into the vertex arrays for each face's vertices.
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  // This array defines each face as two triangles, using the
+  // indices into the vertex array to specify each triangle's
+  // position.
+
+  const indices = shape.indices;
+
+  // Now send the element array to GL
+
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(indices), gl.STATIC_DRAW);
+
+  return {
+    position: positionBuffer,
+    color: colorBuffer,
+    indices: indexBuffer,
+  };
+}
+
 //
 // Draw the scene.
 //
@@ -879,6 +915,26 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
         offset);
     gl.enableVertexAttribArray(
         programInfo.attribLocations.vertexPosition);
+  }
+
+  // Tell WebGL how to pull out the normals from the vertex buffer
+  // into the vertexNormal attribute.
+  {
+    const numComponents = shape.numComponentsPosition;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexNormal,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        programInfo.attribLocations.vertexNormal);
   }
 
   // Tell WebGL how to pull out the colors from the color buffer
