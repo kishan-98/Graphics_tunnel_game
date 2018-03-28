@@ -189,52 +189,52 @@ function create_octagon(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
     ],
 
     'faceColors' : [
@@ -326,52 +326,52 @@ function create_octagon0(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
     ],
 
     'faceColors' : [
@@ -463,52 +463,52 @@ function create_octagon1(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
     ],
 
     'faceColors' : [
