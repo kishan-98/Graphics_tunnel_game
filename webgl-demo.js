@@ -9,6 +9,7 @@ var toggleColour = 0; //0 for keep it as it is, 1 for toggle
 var colour = 0; //0 for original, 1 for shader
 var frames = 0;
 var level_frames = 1200;
+var shakey_frames = 120;
 var score = 0;
 var game_over = 0;
 var amplitude = 0.007;
@@ -23,6 +24,7 @@ var count_type_obstacles = 2;
 
 // Shader global variables
 
+var sourceColor = [1.0, 0.0, 0.0];
 var shaderProgram;
 var programInfo;
 
@@ -36,16 +38,19 @@ const vsSource = `
   uniform mat4 uModelMatrix;
   uniform mat4 uViewMatrix;
   uniform mat4 uProjectionMatrix;
+  uniform vec3 aColor;
 
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
+  varying lowp vec3 sColor;
 
   void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
     vColor = aVertexColor;
     vNormal = vec3(uModelMatrix) * aNormal;
     vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
+    sColor = aColor;
   }
 `;
 
@@ -56,11 +61,12 @@ const fsLSource = `
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
+  varying lowp vec3 sColor;
 
   void main(void) {
-      vec3 source_ambient_color = vec3(0.0, 0.2, 0.0);
-      vec3 source_diffuse_color = vec3(1.0, 1.0, 1.0);
-      vec3 source_specular_color = vec3(0.0, 1.0, 0.0);
+      vec3 source_ambient_color = sColor;
+      vec3 source_diffuse_color = sColor;
+      vec3 source_specular_color = sColor;
       vec3 source_direction = vec3(0.0, 0.0, -1.0);
 
       vec3 mat_ambient_color = vColor.xyz;
@@ -506,6 +512,7 @@ function main() {
   function shakey_screen(now) {
     // requestAnimationFrame(render);
     frames++;
+    shakey_frames--;
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
@@ -518,7 +525,9 @@ function main() {
         obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
-    requestAnimationFrame(shakey_screen);
+    if(shakey_frames > 0){
+        requestAnimationFrame(shakey_screen);
+    }
   }
 
   // Draw the scene repeatedly
@@ -869,6 +878,10 @@ function initBuffers(gl, shape) {
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
+  const sourceColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, sourceColorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sourceColor), gl.STATIC_DRAW);
+
   // Build the element array buffer; this specifies the indices
   // into the vertex arrays for each face's vertices.
 
@@ -890,6 +903,7 @@ function initBuffers(gl, shape) {
     position: positionBuffer,
     color: colorBuffer,
     indices: indexBuffer,
+    source: sourceColorBuffer,
   };
 }
 
@@ -1007,6 +1021,11 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       programInfo.uniformLocations.modelMatrix,
       false,
       modelMatrix);
+  gl.uniform3f(
+      programInfo.uniformLocations.shaderColor,
+      sourceColor[0],
+      sourceColor[1],
+      sourceColor[2]);
 
   {
     const vertexCount = shape.vertexCount;
@@ -1089,6 +1108,7 @@ function changeShader(gl){
         projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
         viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
         modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
+        shaderColor: gl.getUniformLocation(shaderProgram, 'aColor'),
       },
     };
 }
