@@ -44,6 +44,15 @@ var programInfo;
 // [0.0,  1.0,  0.0,  1.0],    // Bottom face: green
 // [0.0,  0.0,  0.0,  1.0],    // Bottom Right face: black
 
+// [1.0,  1.0,  1.0,  1.0],    // Right face: white
+// [1.0,  1.0,  1.0,  1.0],    // Top Right face: white
+// [1.0,  1.0,  1.0,  1.0],    // Top face: white
+// [1.0,  1.0,  1.0,  1.0],    // Top Left Right face: white
+// [1.0,  1.0,  1.0,  1.0],    // Left face: white
+// [1.0,  1.0,  1.0,  1.0],    // Bottom Left face: white
+// [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
+// [1.0,  1.0,  1.0,  1.0],    // Bottom Right face: white
+
 // [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: white
 // [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: black
 // [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: white
@@ -189,63 +198,63 @@ function create_octagon(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
     ],
 
     'faceColors' : [
-            [1.0,  0.0,  0.0,  1.0],    // Right face: red
-            [0.0,  0.0,  0.0,  1.0],    // Top Right face: black
-            [0.0,  0.0,  1.0,  1.0],    // Top face: blue
-            [0.0,  0.0,  0.0,  1.0],    // Top Left Right face: black
-            [1.0,  0.0,  0.0,  1.0],    // Left face: red
-            [0.0,  0.0,  0.0,  1.0],    // Bottom Left face: black
-            [0.0,  1.0,  0.0,  1.0],    // Bottom face: green
-            [0.0,  0.0,  0.0,  1.0],    // Bottom Right face: black
+        [1.0,  1.0,  1.0,  1.0],    // Right face: white
+        [1.0,  1.0,  1.0,  1.0],    // Top Right face: white
+        [1.0,  1.0,  1.0,  1.0],    // Top face: white
+        [1.0,  1.0,  1.0,  1.0],    // Top Left Right face: white
+        [1.0,  1.0,  1.0,  1.0],    // Left face: white
+        [1.0,  1.0,  1.0,  1.0],    // Bottom Left face: white
+        [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
+        [1.0,  1.0,  1.0,  1.0],    // Bottom Right face: white
     ],
 
     'indices' : [
@@ -326,52 +335,52 @@ function create_octagon0(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
     ],
 
     'faceColors' : [
@@ -463,52 +472,52 @@ function create_octagon1(radius){
 
     'normals' : [
       // Right face
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 0*Math.PI/4), radius*Math.sin(Math.PI + 0*Math.PI/4), 0,
 
       // Top Right face
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 1*Math.PI/4), radius*Math.sin(Math.PI + 1*Math.PI/4), 0,
 
       // Top faces
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 2*Math.PI/4), radius*Math.sin(Math.PI + 2*Math.PI/4), 0,
 
       // Top Left face
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), neg_radius, 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 3*Math.PI/4), radius*Math.sin(Math.PI + 3*Math.PI/4), 0,
 
       // Left fact
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
-      -neg_radius, neg_radius*Math.tan(-Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 4*Math.PI/4), radius*Math.sin(Math.PI + 4*Math.PI/4), 0,
 
       // Bottom Left face
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      -neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 5*Math.PI/4), radius*Math.sin(Math.PI + 5*Math.PI/4), 0,
 
       // Bottom faces
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      -neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 6*Math.PI/4), radius*Math.sin(Math.PI + 6*Math.PI/4), 0,
 
       // Bottom Right face
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius, -neg_radius*Math.tan(Math.PI/8), 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
-      neg_radius*Math.tan(Math.PI/8), -neg_radius, 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
     ],
 
     'faceColors' : [
