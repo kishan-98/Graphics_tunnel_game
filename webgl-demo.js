@@ -31,7 +31,7 @@ var source_ambient_color = [0.2, 0.2, 0.2];
 var source_diffuse_color = [1.0, 1.0, 1.0];
 var source_specular_color = [1.0, 1.0, 1.0];
 var source_rotation = 0;
-var source_direction = [0.0, 0*0.5*radius_object*Math.cos(source_rotation), -radius_object];
+var source_direction = [0.0, 0*0.5*radius_object*Math.cos(source_rotation), -0*radius_object];
 var shaderProgram;
 var programInfo;
 
@@ -115,7 +115,7 @@ const fsLSource = `
       vec3 R = reflect(sDirection, vNormal);
       vec3 V = normalize(vView);
       vec3 I_specular = source_specular_color * mat_specular_color * pow(max(dot(R,V), 0.0), mat_shininess);
-      vec3 I = I_ambient + I_diffuse;
+      vec3 I = I_diffuse;
       gl_FragColor = vec4(I, 1.0)*vColor;
   }
 `;
