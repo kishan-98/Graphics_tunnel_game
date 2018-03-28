@@ -1,13 +1,95 @@
+// Game global variables
+
 var level = 1;
 var max_level = 2;
 var speed_level = [0, 3, 5];
-var pause = 1;
+var pause = 0;
+var move = 1;
+var toggleColour = 0; //0 for keep it as it is, 1 for toggle
+var colour = 0; //0 for original, 1 for shader
 var frames = 0;
 var level_frames = 1200;
 var score = 0;
 var game_over = 0;
 var amplitude = 0.007;
 var current_rotation = 0;
+
+// Shapes global variables
+
+var count_shapes = 10;
+var shapes_offset = 5;
+var count_obstacles = 2;
+var count_type_obstacles = 2;
+
+// Shader global variables
+
+var shaderProgram;
+var programInfo;
+
+// Vertex shader program
+
+const vsSource = `
+  attribute vec4 aVertexPosition;
+  attribute vec4 aVertexColor;
+  attribute vec3 aNormal;
+
+  uniform mat4 uModelMatrix;
+  uniform mat4 uViewMatrix;
+  uniform mat4 uProjectionMatrix;
+
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+
+  void main(void) {
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
+    vColor = aVertexColor;
+    vNormal = vec3(uModelMatrix) * aNormal;
+    vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
+  }
+`;
+
+// Fragment shader program for lighting
+
+const fsLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+
+  void main(void) {
+      vec3 source_ambient_color = vec3(0.0, 0.2, 0.0);
+      vec3 source_diffuse_color = vec3(1.0, 1.0, 1.0);
+      vec3 source_specular_color = vec3(0.0, 1.0, 0.0);
+      vec3 source_direction = vec3(0.0, 0.0, -1.0);
+
+      vec3 mat_ambient_color = vColor.xyz;
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 10.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, dot(vNormal, source_direction));
+      vec3 R = reflect(source_direction, vNormal);
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(dot(R,V), 0.0), mat_shininess);
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, 1.0)*vColor;
+  }
+`;
+
+// Fragment shader program without lighting
+
+const fsSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+
+  void main(void) {
+      gl_FragColor = vColor;
+  }
+`;
 
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
@@ -359,10 +441,6 @@ function create_2triangles(){
     'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
-var count_shapes = 10;
-var count_obstacles = 2;
-var count_type_obstacles = 2;
-
 main();
 
 //
@@ -379,81 +457,7 @@ function main() {
     return;
   }
 
-  // Vertex shader program
-
-  const vsSource = `
-    attribute vec4 aVertexPosition;
-    attribute vec4 aVertexColor;
-    attribute vec3 aNormal;
-
-    uniform mat4 uModelMatrix;
-    uniform mat4 uViewMatrix;
-    uniform mat4 uProjectionMatrix;
-
-    varying lowp vec4 vColor;
-    varying lowp vec3 vNormal;
-    varying lowp vec3 vView;
-
-    void main(void) {
-      gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
-      vColor = aVertexColor;
-      vNormal = vec3(uModelMatrix) * aNormal;
-      vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
-    }
-  `;
-
-  // Fragment shader program
-
-  const fsSource = `
-    varying lowp vec4 vColor;
-    varying lowp vec3 vNormal;
-    varying lowp vec3 vView;
-
-    precision lowp float;
-
-    void main(void) {
-        vec3 source_ambient_color = vec3(0.0, 0.2, 0.0);
-        vec3 source_diffuse_color = vec3(1.0, 1.0, 1.0);
-        vec3 source_specular_color = vec3(0.0, 1.0, 0.0);
-        vec3 source_direction = vec3(0.0, 0.0, -1.0);
-
-        vec3 mat_ambient_color = vColor.xyz;
-        vec3 mat_diffuse_color = vColor.xyz;
-        vec3 mat_specular_color = vColor.xyz;
-        float mat_shininess = 10.0;
-
-        vec3 I_ambient = source_ambient_color * mat_ambient_color;
-        vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, dot(vNormal, source_direction));
-        vec3 R = reflect(source_direction, vNormal);
-        vec3 V = normalize(vView);
-        vec3 I_specular = source_specular_color*mat_specular_color*pow(max(dot(R,V), 0.0), mat_shininess);
-        vec3 I = I_ambient + I_diffuse + I_specular;
-        gl_FragColor = vec4(I, 1.0)*vColor;
-        // gl_FragColor = vColor;
-    }
-  `;
-
-  // Initialize a shader program; this is where all the lighting
-  // for the vertices and so forth is established.
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-  // Collect all the info needed to use the shader program.
-  // Look up which attributes our shader program is using
-  // for aVertexPosition, aVevrtexColor and also
-  // look up uniform locations.
-  const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
-      vertexNormal: gl.getAttribLocation(shaderProgram, 'aNormal'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
-      modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
-    },
-  };
+  changeShader(gl);
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
@@ -467,7 +471,7 @@ function main() {
       else{
         shapes.push(create_octagon1());
       }
-      shapes[i].position[2] = -2*i;
+      shapes[i].position[2] = -2*i - shapes_offset;
       buffer_shapes.push(initBuffers(gl, shapes[i]));
   }
 
@@ -533,14 +537,19 @@ function main() {
     refresh_tunnel(gl, shapes, buffer_shapes);
     refresh_obstacles(gl, obstacles, buffer_obstacles);
     handleKeys(shapes, obstacles);
+    if(toggleColour){
+        colour = 1 - colour;
+        changeShader(gl);
+        toggleColour = 0;
+    }
     const projectionMatrix = clearScene(gl);
     for (var i = 0; i < count_shapes; i++){
-        // shapes[i].position[2] += pause * shapes[i].speed * deltaTime;
+        shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
         drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
     }
     for (var i = 0; i < count_obstacles; i++){
-        // obstacles[i].position[2] += pause * obstacles[i].speed * deltaTime;
-        obstacles[i].rotationZ += obstacles[i].rotation * deltaTime;
+        obstacles[i].position[2] += move * (1 - pause) * obstacles[i].speed * deltaTime;
+        obstacles[i].rotationZ += (1 - pause) * obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
     if(!detect_collision(shapes, obstacles)){
@@ -605,6 +614,14 @@ function handleKeyUp(event){
         // P Key
         pause = 1 - pause;
     }
+    else if(event.keyCode == 77){
+        // M Key
+        move = 1 - move;
+    }
+    else if(event.keyCode == 67){
+        // C Key
+        toggleColour = 1;
+    }
     else if(event.keyCode == 74){
         // J Key
         for(var i = 0; i < count_shapes; i++){
@@ -620,7 +637,7 @@ function handleKeyUp(event){
 }
 
 function handleKeys(shapes, obstacles){
-    if(pause){
+    if(!pause){
         if(statusKeys[38]){
             // Up Key
             for(var i = 0; i < count_shapes; i++){
@@ -1050,4 +1067,28 @@ function loadShader(gl, type, source) {
   }
 
   return shader;
+}
+
+function changeShader(gl){
+    // Initialize a shader program; this is where all the lighting
+    // for the vertices and so forth is established.
+    shaderProgram = (colour ? initShaderProgram(gl, vsSource, fsLSource) : initShaderProgram(gl, vsSource, fsSource));
+
+    // Collect all the info needed to use the shader program.
+    // Look up which attributes our shader program is using
+    // for aVertexPosition, aVevrtexColor and also
+    // look up uniform locations.
+    programInfo = {
+      program: shaderProgram,
+      attribLocations: {
+        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
+        vertexNormal: gl.getAttribLocation(shaderProgram, 'aNormal'),
+      },
+      uniformLocations: {
+        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+        viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+        modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
+      },
+    };
 }
