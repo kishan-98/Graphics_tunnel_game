@@ -5,6 +5,7 @@ var max_level = 2;
 var speed_level = [0, 3, 5];
 var pause = 0;
 var move = 1;
+var quit = 0;
 var toggleColour = 0; //0 for keep it as it is, 1 for toggle
 var colour = 0; //0 for original, 1 for shader
 var frames = 0;
@@ -17,14 +18,17 @@ var current_rotation = 0;
 
 // Shapes global variables
 
-var count_shapes = 10;
+var count_shapes = 15;
 var shapes_offset = 5;
 var count_obstacles = 2;
 var count_type_obstacles = 2;
 
 // Shader global variables
 
-var sourceColor = [1.0, 0.0, 0.0];
+var ambient_factor = 5;
+var source_ambient_color = [0.2, 0.2, 0.0];
+var source_diffuse_color = [1.0, 1.0, 1.0];
+var source_specular_color = [1.0, 1.0, 0.0];
 var shaderProgram;
 var programInfo;
 
@@ -38,19 +42,25 @@ const vsSource = `
   uniform mat4 uModelMatrix;
   uniform mat4 uViewMatrix;
   uniform mat4 uProjectionMatrix;
-  uniform vec3 aColor;
+  uniform vec3 uSourceAmbientColor;
+  uniform vec3 uSourceDiffuseColor;
+  uniform vec3 uSourceSpecularColor;
 
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
-  varying lowp vec3 sColor;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
 
   void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
     vColor = aVertexColor;
     vNormal = vec3(uModelMatrix) * aNormal;
     vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
-    sColor = aColor;
+    sAColor = uSourceAmbientColor;
+    sDColor = uSourceDiffuseColor;
+    sSColor = uSourceSpecularColor;
   }
 `;
 
@@ -61,12 +71,14 @@ const fsLSource = `
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
-  varying lowp vec3 sColor;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
 
   void main(void) {
-      vec3 source_ambient_color = sColor;
-      vec3 source_diffuse_color = sColor;
-      vec3 source_specular_color = sColor;
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
       vec3 source_direction = vec3(0.0, 0.0, -1.0);
 
       vec3 mat_ambient_color = vColor.xyz;
@@ -96,6 +108,92 @@ const fsSource = `
       gl_FragColor = vColor;
   }
 `;
+
+function create_octagon(){
+    return {'position'  : [0, 0, 0],
+    'radius' : 1/Math.cos(Math.PI/8),
+    'positions' : [
+      // Right face
+      1.0, Math.tan(Math.PI/8), 1.0,
+      1.0, Math.tan(Math.PI/8), -1.0,
+      1.0, Math.tan(-Math.PI/8), -1.0,
+      1.0, Math.tan(-Math.PI/8), 1.0,
+
+      // Top Right face
+      Math.tan(Math.PI/8), 1.0, 1.0,
+      Math.tan(Math.PI/8), 1.0, -1.0,
+      1.0, Math.tan(Math.PI/8), -1.0,
+      1.0, Math.tan(Math.PI/8), 1.0,
+
+      // Top faces
+      -Math.tan(Math.PI/8), 1.0, 1.0,
+      -Math.tan(Math.PI/8), 1.0, -1.0,
+      Math.tan(Math.PI/8), 1.0, -1.0,
+      Math.tan(Math.PI/8), 1.0, 1.0,
+
+      // Top Left face
+      -1.0, Math.tan(Math.PI/8), 1.0,
+      -1.0, Math.tan(Math.PI/8), -1.0,
+      -Math.tan(Math.PI/8), 1.0, -1.0,
+      -Math.tan(Math.PI/8), 1.0, 1.0,
+
+      // Left fact
+      -1.0, Math.tan(Math.PI/8), 1.0,
+      -1.0, Math.tan(Math.PI/8), -1.0,
+      -1.0, Math.tan(-Math.PI/8), -1.0,
+      -1.0, Math.tan(-Math.PI/8), 1.0,
+
+      // Bottom Left face
+      -Math.tan(Math.PI/8), -1.0, 1.0,
+      -Math.tan(Math.PI/8), -1.0, -1.0,
+      -1.0, -Math.tan(Math.PI/8), -1.0,
+      -1.0, -Math.tan(Math.PI/8), 1.0,
+
+      // Bottom faces
+      Math.tan(Math.PI/8), -1.0, 1.0,
+      Math.tan(Math.PI/8), -1.0, -1.0,
+      -Math.tan(Math.PI/8), -1.0, -1.0,
+      -Math.tan(Math.PI/8), -1.0, 1.0,
+
+      // Bottom Right face
+      1.0, -Math.tan(Math.PI/8), 1.0,
+      1.0, -Math.tan(Math.PI/8), -1.0,
+      Math.tan(Math.PI/8), -1.0, -1.0,
+      Math.tan(Math.PI/8), -1.0, 1.0,
+    ],
+
+    'faceColors' : [
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: white
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: black
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: white
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: black
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: white
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: black
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: white
+      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: black
+    ],
+
+    'indices' : [
+      0,  1,  2,      0,  2,  3,    // right
+      4,  5,  6,      4,  6,  7,    // right top
+      8,  9,  10,     8,  10, 11,   // top
+      12, 13, 14,     12, 14, 15,   // top left
+      16, 17, 18,     16, 18, 19,   // left
+      20, 21, 22,     20, 22, 23,   // bottom left
+      24, 25, 26,     24, 26, 27,   // bottom
+      28, 29, 30,     28, 30, 31,   // bottom right
+    ],
+
+    'numComponentsPosition' : 3,
+    'numComponentsColor' : 4,
+    'vertexCount' : 48,
+    'rotationX' : 0,
+    'rotationY' : 0,
+    'rotationZ' : 0,
+    'speed'     : 7,
+    'rotation'  : 0.05,
+    'category'  : 0,}
+}
 
 function create_octagon0(){
     return {'position'  : [0, 0, 0],
@@ -525,7 +623,7 @@ function main() {
         obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
-    if(shakey_frames > 0){
+    if(!quit && shakey_frames > 0){
         requestAnimationFrame(shakey_screen);
     }
   }
@@ -561,10 +659,10 @@ function main() {
         obstacles[i].rotationZ += (1 - pause) * obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
-    if(!detect_collision(shapes, obstacles)){
+    if(!quit && !detect_collision(shapes, obstacles)){
         requestAnimationFrame(render);
     }
-    else{
+    else if(!quit){
         frames = 0;
         shakey_screen(gl, shapes, buffer_shapes, obstacles, buffer_obstacles);
     }
@@ -619,7 +717,11 @@ function handleKeyDown(event){
 }
 
 function handleKeyUp(event){
-    if(event.keyCode == 80){
+    if(event.keyCode == 81){
+        // Q Key
+        quit = 1;
+    }
+    else if(event.keyCode == 80){
         // P Key
         pause = 1 - pause;
     }
@@ -639,6 +741,9 @@ function handleKeyUp(event){
         for(var i = 0; i < count_obstacles; i++){
             obstacles[i].rotationZ += Math.PI;
         }
+    }
+    else if(48 <= event.keyCode && event.keyCode < 58){
+        set_source_color(event.keyCode - 48);
     }
     else{
         statusKeys[event.keyCode] = false;
@@ -717,17 +822,29 @@ function handleKeys(shapes, obstacles){
     }
 }
 
+function set_source_color(key){
+    if(0 <= key && key < 8){
+        source_specular_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
+        source_ambient_color = [source_specular_color[0] / ambient_factor, source_specular_color[1] / ambient_factor, source_specular_color[2] / ambient_factor];
+    }
+    else if(key == 8 || key == 9){
+        source_specular_color = [Math.random(), Math.random(), Math.random()];
+        source_ambient_color = [source_specular_color[0] / ambient_factor, source_specular_color[1] / ambient_factor, source_specular_color[2] / ambient_factor];
+    }
+}
+
 function refresh_tunnel(gl, shapes, buffers){
-    if(shapes.length && shapes[0].position[2] > 1){
+    if(shapes.length && shapes[0].position[2] > 2*shapes_offset){
         shapes.shift();
         buffers.shift();
         count_shapes--;
-        if(shapes[count_shapes-1].category){
-            shapes.push(create_octagon0());
-        }
-        else{
-            shapes.push(create_octagon1());
-        }
+        // if(shapes[count_shapes-1].category){
+        //     shapes.push(create_octagon0());
+        // }
+        // else{
+        //     shapes.push(create_octagon1());
+        // }
+        shapes.push(create_octagon());
         count_shapes++;
         shapes[count_shapes - 1].position[2] = shapes[count_shapes - 2].position[2] - 2;
         shapes[count_shapes - 1].rotationX = shapes[count_shapes - 2].rotationX;
@@ -878,10 +995,6 @@ function initBuffers(gl, shape) {
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-  const sourceColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, sourceColorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sourceColor), gl.STATIC_DRAW);
-
   // Build the element array buffer; this specifies the indices
   // into the vertex arrays for each face's vertices.
 
@@ -903,7 +1016,6 @@ function initBuffers(gl, shape) {
     position: positionBuffer,
     color: colorBuffer,
     indices: indexBuffer,
-    source: sourceColorBuffer,
   };
 }
 
@@ -1022,10 +1134,20 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       false,
       modelMatrix);
   gl.uniform3f(
-      programInfo.uniformLocations.shaderColor,
-      sourceColor[0],
-      sourceColor[1],
-      sourceColor[2]);
+      programInfo.uniformLocations.sourceAmbientColor,
+      source_ambient_color[0],
+      source_ambient_color[1],
+      source_ambient_color[2]);
+  gl.uniform3f(
+      programInfo.uniformLocations.sourceDiffuseColor,
+      source_diffuse_color[0],
+      source_diffuse_color[1],
+      source_diffuse_color[2]);
+  gl.uniform3f(
+      programInfo.uniformLocations.sourceSpecularColor,
+      source_specular_color[0],
+      source_specular_color[1],
+      source_specular_color[2]);
 
   {
     const vertexCount = shape.vertexCount;
@@ -1108,7 +1230,9 @@ function changeShader(gl){
         projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
         viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
         modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
-        shaderColor: gl.getUniformLocation(shaderProgram, 'aColor'),
+        sourceAmbientColor: gl.getUniformLocation(shaderProgram, 'uSourceAmbientColor'),
+        sourceDiffuseColor: gl.getUniformLocation(shaderProgram, 'uSourceDiffuseColor'),
+        sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
       },
     };
 }
