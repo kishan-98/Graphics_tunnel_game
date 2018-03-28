@@ -18,19 +18,40 @@ var current_rotation = 0;
 
 // Shapes global variables
 
+var radius_object = 1;
 var count_shapes = 15;
-var shapes_offset = 5;
+var shapes_offset = 5*radius_object;
 var count_obstacles = 2;
 var count_type_obstacles = 2;
 
 // Shader global variables
 
 var ambient_factor = 5;
-var source_ambient_color = [0.2, 0.2, 0.0];
+var source_ambient_color = [0.2, 0.2, 0.2];
 var source_diffuse_color = [1.0, 1.0, 1.0];
-var source_specular_color = [1.0, 1.0, 0.0];
+var source_specular_color = [1.0, 1.0, 1.0];
+var source_rotation = 0;
+var source_direction = [0.0, 0*0.5*radius_object*Math.cos(source_rotation), -radius_object];
 var shaderProgram;
 var programInfo;
+
+// [1.0,  0.0,  0.0,  1.0],    // Right face: red
+// [0.0,  0.0,  0.0,  1.0],    // Top Right face: black
+// [0.0,  0.0,  1.0,  1.0],    // Top face: blue
+// [0.0,  0.0,  0.0,  1.0],    // Top Left Right face: black
+// [1.0,  0.0,  0.0,  1.0],    // Left face: red
+// [0.0,  0.0,  0.0,  1.0],    // Bottom Left face: black
+// [0.0,  1.0,  0.0,  1.0],    // Bottom face: green
+// [0.0,  0.0,  0.0,  1.0],    // Bottom Right face: black
+
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: white
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: black
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: white
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: black
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: white
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: black
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: white
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: black
 
 // Vertex shader program
 
@@ -45,6 +66,7 @@ const vsSource = `
   uniform vec3 uSourceAmbientColor;
   uniform vec3 uSourceDiffuseColor;
   uniform vec3 uSourceSpecularColor;
+  uniform vec3 uSourceDirection;
 
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
@@ -52,15 +74,17 @@ const vsSource = `
   varying lowp vec3 sAColor;
   varying lowp vec3 sDColor;
   varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
 
   void main(void) {
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;;
     vColor = aVertexColor;
-    vNormal = vec3(uModelMatrix) * aNormal;
+    vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
     vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
     sAColor = uSourceAmbientColor;
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
+    sDirection = vec3(uModelMatrix * aVertexPosition) - uSourceDirection;
   }
 `;
 
@@ -74,12 +98,12 @@ const fsLSource = `
   varying lowp vec3 sAColor;
   varying lowp vec3 sDColor;
   varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
 
   void main(void) {
       vec3 source_ambient_color = sAColor;
       vec3 source_diffuse_color = sDColor;
       vec3 source_specular_color = sSColor;
-      vec3 source_direction = vec3(0.0, 0.0, -1.0);
 
       vec3 mat_ambient_color = vColor.xyz;
       vec3 mat_diffuse_color = vColor.xyz;
@@ -87,11 +111,11 @@ const fsLSource = `
       float mat_shininess = 10.0;
 
       vec3 I_ambient = source_ambient_color * mat_ambient_color;
-      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, dot(vNormal, source_direction));
-      vec3 R = reflect(source_direction, vNormal);
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -dot(vNormal, sDirection));
+      vec3 R = reflect(sDirection, vNormal);
       vec3 V = normalize(vView);
       vec3 I_specular = source_specular_color * mat_specular_color * pow(max(dot(R,V), 0.0), mat_shininess);
-      vec3 I = I_ambient + I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse;
       gl_FragColor = vec4(I, 1.0)*vColor;
   }
 `;
@@ -109,68 +133,119 @@ const fsSource = `
   }
 `;
 
-function create_octagon(){
+function create_octagon(radius){
+    var neg_radius = -radius;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
       // Right face
-      1.0, Math.tan(Math.PI/8), 1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), 1.0,
+      radius, radius*Math.tan(Math.PI/8), radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Top Right face
-      Math.tan(Math.PI/8), 1.0, 1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(Math.PI/8), 1.0,
+      radius*Math.tan(Math.PI/8), radius, radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(Math.PI/8), radius,
 
       // Top faces
-      -Math.tan(Math.PI/8), 1.0, 1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius*Math.tan(Math.PI/8), radius, radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, radius,
 
       // Top Left face
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      -Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      -radius*Math.tan(Math.PI/8), radius, radius,
 
       // Left fact
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Bottom Left face
-      -Math.tan(Math.PI/8), -1.0, 1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -1.0, -Math.tan(Math.PI/8), -1.0,
-      -1.0, -Math.tan(Math.PI/8), 1.0,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius, -radius*Math.tan(Math.PI/8), -radius,
+      -radius, -radius*Math.tan(Math.PI/8), radius,
 
       // Bottom faces
-      Math.tan(Math.PI/8), -1.0, 1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, 1.0,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
 
       // Bottom Right face
-      1.0, -Math.tan(Math.PI/8), 1.0,
-      1.0, -Math.tan(Math.PI/8), -1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      Math.tan(Math.PI/8), -1.0, 1.0,
+      radius, -radius*Math.tan(Math.PI/8), radius,
+      radius, -radius*Math.tan(Math.PI/8), -radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+    ],
+
+    'normals' : [
+      // Right face
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Top Right face
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Top faces
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Top Left face
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Left fact
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Bottom Left face
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Bottom faces
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+
+      // Bottom Right face
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
     ],
 
     'faceColors' : [
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: white
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: black
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: white
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: black
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: white
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: black
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: white
-      [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: black
+            [1.0,  0.0,  0.0,  1.0],    // Right face: red
+            [0.0,  0.0,  0.0,  1.0],    // Top Right face: black
+            [0.0,  0.0,  1.0,  1.0],    // Top face: blue
+            [0.0,  0.0,  0.0,  1.0],    // Top Left Right face: black
+            [1.0,  0.0,  0.0,  1.0],    // Left face: red
+            [0.0,  0.0,  0.0,  1.0],    // Bottom Left face: black
+            [0.0,  1.0,  0.0,  1.0],    // Bottom face: green
+            [0.0,  0.0,  0.0,  1.0],    // Bottom Right face: black
     ],
 
     'indices' : [
@@ -190,62 +265,113 @@ function create_octagon(){
     'rotationX' : 0,
     'rotationY' : 0,
     'rotationZ' : 0,
-    'speed'     : 7,
+    'speed'     : 7*radius,
     'rotation'  : 0.05,
-    'category'  : 0,}
+    'category'  : 2,}
 }
 
-function create_octagon0(){
+function create_octagon0(radius){
+    var neg_radius = -radius;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
       // Right face
-      1.0, Math.tan(Math.PI/8), 1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), 1.0,
+      radius, radius*Math.tan(Math.PI/8), radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Top Right face
-      Math.tan(Math.PI/8), 1.0, 1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(Math.PI/8), 1.0,
+      radius*Math.tan(Math.PI/8), radius, radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(Math.PI/8), radius,
 
       // Top faces
-      -Math.tan(Math.PI/8), 1.0, 1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius*Math.tan(Math.PI/8), radius, radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, radius,
 
       // Top Left face
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      -Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      -radius*Math.tan(Math.PI/8), radius, radius,
 
       // Left fact
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Bottom Left face
-      -Math.tan(Math.PI/8), -1.0, 1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -1.0, -Math.tan(Math.PI/8), -1.0,
-      -1.0, -Math.tan(Math.PI/8), 1.0,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius, -radius*Math.tan(Math.PI/8), -radius,
+      -radius, -radius*Math.tan(Math.PI/8), radius,
 
       // Bottom faces
-      Math.tan(Math.PI/8), -1.0, 1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, 1.0,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
 
       // Bottom Right face
-      1.0, -Math.tan(Math.PI/8), 1.0,
-      1.0, -Math.tan(Math.PI/8), -1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      Math.tan(Math.PI/8), -1.0, 1.0,
+      radius, -radius*Math.tan(Math.PI/8), radius,
+      radius, -radius*Math.tan(Math.PI/8), -radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+    ],
+
+    'normals' : [
+      // Right face
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Top Right face
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Top faces
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Top Left face
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Left fact
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Bottom Left face
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Bottom faces
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+
+      // Bottom Right face
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
     ],
 
     'faceColors' : [
@@ -276,62 +402,113 @@ function create_octagon0(){
     'rotationX' : 0,
     'rotationY' : 0,
     'rotationZ' : 0,
-    'speed'     : 7,
+    'speed'     : 7*radius,
     'rotation'  : 0.05,
     'category'  : 0,}
 }
 
-function create_octagon1(){
+function create_octagon1(radius){
+    var neg_radius = -radius;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
       // Right face
-      1.0, Math.tan(Math.PI/8), 1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), -1.0,
-      1.0, Math.tan(-Math.PI/8), 1.0,
+      radius, radius*Math.tan(Math.PI/8), radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), -radius,
+      radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Top Right face
-      Math.tan(Math.PI/8), 1.0, 1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      1.0, Math.tan(Math.PI/8), -1.0,
-      1.0, Math.tan(Math.PI/8), 1.0,
+      radius*Math.tan(Math.PI/8), radius, radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius, radius*Math.tan(Math.PI/8), -radius,
+      radius, radius*Math.tan(Math.PI/8), radius,
 
       // Top faces
-      -Math.tan(Math.PI/8), 1.0, 1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, -1.0,
-      Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius*Math.tan(Math.PI/8), radius, radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, -radius,
+      radius*Math.tan(Math.PI/8), radius, radius,
 
       // Top Left face
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -Math.tan(Math.PI/8), 1.0, -1.0,
-      -Math.tan(Math.PI/8), 1.0, 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius*Math.tan(Math.PI/8), radius, -radius,
+      -radius*Math.tan(Math.PI/8), radius, radius,
 
       // Left fact
-      -1.0, Math.tan(Math.PI/8), 1.0,
-      -1.0, Math.tan(Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), -1.0,
-      -1.0, Math.tan(-Math.PI/8), 1.0,
+      -radius, radius*Math.tan(Math.PI/8), radius,
+      -radius, radius*Math.tan(Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), -radius,
+      -radius, radius*Math.tan(-Math.PI/8), radius,
 
       // Bottom Left face
-      -Math.tan(Math.PI/8), -1.0, 1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -1.0, -Math.tan(Math.PI/8), -1.0,
-      -1.0, -Math.tan(Math.PI/8), 1.0,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius, -radius*Math.tan(Math.PI/8), -radius,
+      -radius, -radius*Math.tan(Math.PI/8), radius,
 
       // Bottom faces
-      Math.tan(Math.PI/8), -1.0, 1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, -1.0,
-      -Math.tan(Math.PI/8), -1.0, 1.0,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, -radius,
+      -radius*Math.tan(Math.PI/8), -radius, radius,
 
       // Bottom Right face
-      1.0, -Math.tan(Math.PI/8), 1.0,
-      1.0, -Math.tan(Math.PI/8), -1.0,
-      Math.tan(Math.PI/8), -1.0, -1.0,
-      Math.tan(Math.PI/8), -1.0, 1.0,
+      radius, -radius*Math.tan(Math.PI/8), radius,
+      radius, -radius*Math.tan(Math.PI/8), -radius,
+      radius*Math.tan(Math.PI/8), -radius, -radius,
+      radius*Math.tan(Math.PI/8), -radius, radius,
+    ],
+
+    'normals' : [
+      // Right face
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Top Right face
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Top faces
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Top Left face
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), neg_radius, neg_radius,
+
+      // Left fact
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), neg_radius,
+      -neg_radius, neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), -neg_radius,
+      -neg_radius, neg_radius*Math.tan(-Math.PI/8), neg_radius,
+
+      // Bottom Left face
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      -neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+
+      // Bottom faces
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      -neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
+
+      // Bottom Right face
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), neg_radius,
+      neg_radius, -neg_radius*Math.tan(Math.PI/8), -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, -neg_radius,
+      neg_radius*Math.tan(Math.PI/8), -neg_radius, neg_radius,
     ],
 
     'faceColors' : [
@@ -362,16 +539,54 @@ function create_octagon1(){
     'rotationX' : 0,
     'rotationY' : 0,
     'rotationZ' : 0,
-    'speed'     : 7,
+    'speed'     : 7*radius,
     'rotation'  : 0.05,
     'category'  : 1,}
 }
 
-function create_cuboid(){
-    var len = Math.tan(Math.PI/8)/3, height = 1.0, wid = Math.tan(Math.PI/8)/50;
+function create_cuboid(radius){
+    var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    return {'position'  : [0, 0, -20],
+    return {'position'  : [0, 0, -20*radius],
     'positions' : [
+      // Right face
+      len, height, wid,
+      len, height, -wid,
+      len, -height, -wid,
+      len, -height, wid,
+
+      // Left face
+      -len, height, wid,
+      -len, height, -wid,
+      -len, -height, -wid,
+      -len, -height, wid,
+
+      // Top faces
+      -len, height, wid,
+      len, height, wid,
+      len, height, -wid,
+      -len, height, -wid,
+
+      // Bottom faces
+      -len, -height, wid,
+      len, -height, wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
+      // Front face
+      -len, height, wid,
+      len, height, wid,
+      len, -height, wid,
+      -len, -height, wid,
+
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+    ],
+
+    'normals' : [
       // Right face
       len, height, wid,
       len, height, -wid,
@@ -433,15 +648,79 @@ function create_cuboid(){
     'rotationX' : 0,
     'rotationY' : 0,
     'rotationZ' : 0,
-    'speed'     : 7,
+    'speed'     : 7*radius,
     'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
-function create_2triangles(){
-    var len = Math.tan(Math.PI/8), height = 1.0, wid = Math.tan(Math.PI/8)/50;
+function create_2triangles(radius){
+    var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    return {'position'  : [0, 0, -20],
+    return {'position'  : [0, 0, -20*radius],
     'positions' : [
+      // Top triangle
+      // Right face
+      0, 0, wid,
+      0, 0, -wid,
+      len, height, -wid,
+      len, height, wid,
+
+      // Left face
+      0, 0, wid,
+      0, 0, -wid,
+      -len, height, -wid,
+      -len, height, wid,
+
+      // Top faces
+      -len, height, wid,
+      len, height, wid,
+      len, height, -wid,
+      -len, height, -wid,
+
+      // Front face
+      -len, height, wid,
+      len, height, wid,
+      0, 0, wid,
+      len, height, wid,
+
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      0, 0, -wid,
+      len, height, -wid,
+
+      // Bottom triangle
+      // Right face
+      0, 0, wid,
+      0, 0, -wid,
+      len, -height, -wid,
+      len, -height, wid,
+
+      // Left face
+      0, 0, wid,
+      0, 0, -wid,
+      -len, -height, -wid,
+      -len, -height, wid,
+
+      // Top faces
+      -len, -height, wid,
+      len, -height, wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
+      // Front face
+      -len, -height, wid,
+      len, -height, wid,
+      0, 0, wid,
+      len, -height, wid,
+
+      // Back face
+      -len, -height, -wid,
+      len, -height, -wid,
+      0, 0, -wid,
+      len, -height, -wid,
+    ],
+
+    'normals' : [
       // Top triangle
       // Right face
       0, 0, wid,
@@ -541,7 +820,7 @@ function create_2triangles(){
     'rotationX' : 0,
     'rotationY' : 0,
     'rotationZ' : 0,
-    'speed'     : 7,
+    'speed'     : 7*radius,
     'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
@@ -570,12 +849,12 @@ function main() {
   buffer_shapes = [];
   for (var i = 0; i < count_shapes; i++){
       if(i&1){
-        shapes.push(create_octagon0());
+        shapes.push(create_octagon0(radius_object));
       }
       else{
-        shapes.push(create_octagon1());
+        shapes.push(create_octagon1(radius_object));
       }
-      shapes[i].position[2] = -2*i - shapes_offset;
+      shapes[i].position[2] = -2*i*radius_object - shapes_offset;
       buffer_shapes.push(initBuffers(gl, shapes[i]));
   }
 
@@ -585,17 +864,17 @@ function main() {
       var type = Math.floor(Math.random()*count_type_obstacles);
       switch (type) {
           case 0:{
-              obstacles.push(create_cuboid());
+              obstacles.push(create_cuboid(radius_object));
               break;
           }
           case 1:{
-              obstacles.push(create_2triangles());
+              obstacles.push(create_2triangles(radius_object));
               break;
           }
           default:
               break;
       }
-      obstacles[i].position[2] -= 10*(i-1);
+      obstacles[i].position[2] -= 10*(i-1)*radius_object + shapes_offset;
       obstacles[i].rotationZ = i*Math.PI/count_obstacles;
       buffer_obstacles.push(initBuffers(gl, obstacles[i]));
   }
@@ -692,7 +971,7 @@ function print_data(deltaTime){
 
 function detect_collision(shapes, obstacles){
     for (var i = 0; i < count_obstacles; i++){
-        if(obstacles[i].position[2] > -0.5){
+        if(obstacles[i].position[2] > -0.5*radius_object){
             var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / Math.PI) * Math.PI;
             var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
             if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
@@ -755,19 +1034,19 @@ function handleKeys(shapes, obstacles){
         if(statusKeys[38]){
             // Up Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].position[2] += 0.5;//shapes[i].speed / 60;
+                shapes[i].position[2] += shapes[i].speed / speed * 3;
             }
             for(var i = 0; i < count_obstacles; i++){
-                obstacles[i].position[2] += 0.5;//obstacles[i].speed / 60;
+                obstacles[i].position[2] += obstacles[i].speed / speed * 3;
             }
         }
         if(statusKeys[40]){
             // Down Key
             for(var i = 0; i < count_shapes; i++){
-                shapes[i].position[2] -= 0.5;//shapes[i].speed / 60;
+                shapes[i].position[2] -= shapes[i].speed / speed * 3;
             }
             for(var i = 0; i < count_obstacles; i++){
-                obstacles[i].position[2] -= 0.5;//obstacles[i].speed / 60;
+                obstacles[i].position[2] -= obstacles[i].speed / speed * 3;
             }
         }
         if(statusKeys[37]){
@@ -778,6 +1057,8 @@ function handleKeys(shapes, obstacles){
             for(var i = 0; i < count_obstacles; i++){
                 obstacles[i].rotationZ += shapes[0].rotation;
             }
+            source_rotation += shapes[0].rotation;
+            // source_direction[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
         if(statusKeys[39]){
             // Right Key
@@ -787,6 +1068,8 @@ function handleKeys(shapes, obstacles){
             for(var i = 0; i < count_obstacles; i++){
                 obstacles[i].rotationZ -= shapes[0].rotation;
             }
+            source_rotation -= shapes[0].rotation;
+            // source_direction[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
         // if(statusKeys[32]){
         //     // Space Key
@@ -824,13 +1107,15 @@ function handleKeys(shapes, obstacles){
 
 function set_source_color(key){
     if(0 <= key && key < 8){
-        source_specular_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
-        source_ambient_color = [source_specular_color[0] / ambient_factor, source_specular_color[1] / ambient_factor, source_specular_color[2] / ambient_factor];
+        source_diffuse_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
+        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
     }
     else if(key == 8 || key == 9){
-        source_specular_color = [Math.random(), Math.random(), Math.random()];
-        source_ambient_color = [source_specular_color[0] / ambient_factor, source_specular_color[1] / ambient_factor, source_specular_color[2] / ambient_factor];
+        source_diffuse_color = [Math.random(), Math.random(), Math.random()];
+        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
     }
+    console.log(source_diffuse_color);
+    console.log(source_ambient_color);
 }
 
 function refresh_tunnel(gl, shapes, buffers){
@@ -844,9 +1129,9 @@ function refresh_tunnel(gl, shapes, buffers){
         // else{
         //     shapes.push(create_octagon1());
         // }
-        shapes.push(create_octagon());
+        shapes.push(create_octagon(radius_object));
         count_shapes++;
-        shapes[count_shapes - 1].position[2] = shapes[count_shapes - 2].position[2] - 2;
+        shapes[count_shapes - 1].position[2] = shapes[count_shapes - 2].position[2] - 2*radius_object;
         shapes[count_shapes - 1].rotationX = shapes[count_shapes - 2].rotationX;
         shapes[count_shapes - 1].rotationY = shapes[count_shapes - 2].rotationY;
         shapes[count_shapes - 1].rotationZ = shapes[count_shapes - 2].rotationZ;
@@ -855,7 +1140,7 @@ function refresh_tunnel(gl, shapes, buffers){
 }
 
 function refresh_obstacles(gl, obstacles, buffer_obstacles){
-    if((obstacles.length > 0 && obstacles[0].position[2] > 1)){
+    if((obstacles.length > 0 && obstacles[0].position[2] > 1*radius_object)){
         obstacles.shift();
         buffer_obstacles.shift();
         count_obstacles--;
@@ -865,14 +1150,14 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
         // console.log(type);
         switch (type) {
             case 0:{
-                obstacles.push(create_cuboid());
+                obstacles.push(create_cuboid(radius_object));
                 count_obstacles++;
                 obstacles[count_obstacles - 1].rotationZ = Math.random()*Math.PI;
                 buffer_obstacles.push(initBuffers(gl, obstacles[count_obstacles - 1]));
                 break;
             }
             case 1:{
-                obstacles.push(create_2triangles());
+                obstacles.push(create_2triangles(radius_object));
                 count_obstacles++;
                 obstacles[count_obstacles - 1].rotationZ = Math.random()*Math.PI;
                 buffer_obstacles.push(initBuffers(gl, obstacles[count_obstacles - 1]));
@@ -883,20 +1168,20 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
         }
     }
     else if(obstacles.length == 0){
-        var type = Math.floor(Math.random()*(count_type_obstacles+1));
+        var type = Math.floor(Math.random()*count_type_obstacles);
         // type = count_type_obstacles;
-        // console.log("type");
+        // console.log("type0");
         // console.log(type);
         switch (type) {
             case 0:{
-                obstacles.push(create_cuboid());
+                obstacles.push(create_cuboid(radius_object));
                 count_obstacles++;
                 obstacles[count_obstacles - 1].rotationZ = Math.random()*Math.PI;
                 buffer_obstacles.push(initBuffers(gl, obstacles[count_obstacles - 1]));
                 break;
             }
             case 1:{
-                obstacles.push(create_2triangles());
+                obstacles.push(create_2triangles(radius_object));
                 count_obstacles++;
                 obstacles[count_obstacles - 1].rotationZ = Math.random()*Math.PI;
                 buffer_obstacles.push(initBuffers(gl, obstacles[count_obstacles - 1]));
@@ -964,12 +1249,12 @@ function initBuffers(gl, shape) {
 
   const normalBuffer = gl.createBuffer();
 
-  // Select the normalBuffer as the one to apply buffer
+  // Select the positionBuffer as the one to apply buffer
   // operations to from here out.
 
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
 
-  const normals = shape.positions;
+  const normals = shape.normals;
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
 
@@ -1016,6 +1301,7 @@ function initBuffers(gl, shape) {
     position: positionBuffer,
     color: colorBuffer,
     indices: indexBuffer,
+    normal: normalBuffer,
   };
 }
 
@@ -1080,7 +1366,7 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
     const normalize = false;
     const stride = 0;
     const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
     gl.vertexAttribPointer(
         programInfo.attribLocations.vertexNormal,
         numComponents,
@@ -1148,6 +1434,11 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_specular_color[0],
       source_specular_color[1],
       source_specular_color[2]);
+  gl.uniform3f(
+      programInfo.uniformLocations.sourceDirection,
+      source_direction[0],
+      source_direction[1],
+      source_direction[2]);
 
   {
     const vertexCount = shape.vertexCount;
@@ -1233,6 +1524,7 @@ function changeShader(gl){
         sourceAmbientColor: gl.getUniformLocation(shaderProgram, 'uSourceAmbientColor'),
         sourceDiffuseColor: gl.getUniformLocation(shaderProgram, 'uSourceDiffuseColor'),
         sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
+        sourceDirection: gl.getUniformLocation(shaderProgram, 'uSourceDirection'),
       },
     };
 }
