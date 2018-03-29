@@ -10,6 +10,8 @@ Key Console:
     J: Jump
     G: Toggle Grayscale
     R: Reset Game
+    W: Move light source ahead in tunnel
+    S: Move light source behind in tunnel
     0-9: Change source colour
 
 0 Black

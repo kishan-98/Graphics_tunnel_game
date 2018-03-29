@@ -34,9 +34,9 @@ var camera_up = [0.0, 1.0, 0.0];
 // Shader global variables
 
 var ambient_factor = 5;
-var source_ambient_color = [0.2, 0.2, 0.2];
 var source_diffuse_color = [1.0, 1.0, 1.0];
-var source_specular_color = [0.4, 0.4, 0.4];
+var source_ambient_color = [source_diffuse_color[0]/ambient_factor, source_diffuse_color[1]/ambient_factor, source_diffuse_color[2]/ambient_factor];
+var source_specular_color = [1.0, 1.0, 1.0];
 var source_rotation = 0;
 var source_position = [0.0, 0.5*radius_object, -1.0*radius_object];
 var shaderProgram;
@@ -96,7 +96,7 @@ const vsSource = `
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
     vColor = aVertexColor;
     vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
-    vView = vec3(uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0));
+    vView = vec3(-uViewMatrix[0][2], -uViewMatrix[1][2], -uViewMatrix[2][2]);
     sAColor = uSourceAmbientColor;
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
@@ -124,14 +124,20 @@ const fsLSource = `
       vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
       vec3 mat_diffuse_color = vColor.xyz;
       vec3 mat_specular_color = vColor.xyz;
-      float mat_shininess = 1.0;
+      float mat_shininess = 5000.0;
 
       vec3 I_ambient = source_ambient_color * mat_ambient_color;
       vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
-      vec3 R = reflect(sDirection, vNormal);
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
       vec3 V = normalize(vView);
       vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
-      vec3 I = I_specular;
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
       gl_FragColor = vec4(I, 1.0)*vColor;
   }
 `;
@@ -1270,10 +1276,12 @@ function set_source_color(key){
     if(0 <= key && key < 8){
         source_diffuse_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
         source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     else if(key == 8 || key == 9){
         source_diffuse_color = [Math.random(), Math.random(), Math.random()];
         source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     // console.log(source_diffuse_color);
     // console.log(source_ambient_color);
@@ -1486,6 +1494,11 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
 
   const viewMatrix = mat4.create();
   mat4.lookAt(viewMatrix, camera_position, camera_target, camera_up);
+
+  // console.log("*");
+  // console.log(camera_target);
+  // console.log(viewMatrix[2],viewMatrix[6],viewMatrix[10],viewMatrix[14]);
+  // console.log(viewMatrix[8],viewMatrix[9],viewMatrix[10],viewMatrix[11]);
 
   // Now move the drawing position a bit to where we want to
   // start drawing the square.
