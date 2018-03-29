@@ -8,6 +8,7 @@ Key Console:
     M: Toggle special pause
     C: Change shader
     J: Jump
+    G: Toggle Grayscale
     0-9: Change source colour
 
 0 Black

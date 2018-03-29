@@ -20,7 +20,8 @@ var current_rotation = 0;
 
 var radius_object = 1;
 var count_shapes = 15;
-var shapes_offset = 5*radius_object;
+var shapes_offset = 15*radius_object;
+var remove_offset = 5*radius_object;
 var count_obstacles = 2;
 var count_type_obstacles = 2;
 
@@ -53,19 +54,19 @@ var programInfo;
 // [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
 // [1.0,  1.0,  1.0,  1.0],    // Bottom Right face: white
 
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: white
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: black
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: white
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: black
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: white
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: black
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: white
-// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: black
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: random
+// [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: random
 
 // Vertex shader program
 
 const vsSource = `
-  attribute vec4 aVertexPosition;
+  attribute vec3 aVertexPosition;
   attribute vec4 aVertexColor;
   attribute vec3 aNormal;
 
@@ -86,14 +87,14 @@ const vsSource = `
   varying lowp vec3 sDirection;
 
   void main(void) {
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;;
+    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
     vColor = aVertexColor;
-    vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
-    vView = vec3(uViewMatrix * uModelMatrix * aVertexPosition);
+    vNormal = normalize(vec3(uModelMatrix * vec4(aNormal, 0.0)));
+    vView = vec3(uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0));
     sAColor = uSourceAmbientColor;
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
-    sDirection = vec3(uModelMatrix * aVertexPosition) - uSourceDirection;
+    sDirection = normalize(vec3(uModelMatrix * vec4(aVertexPosition, 1.0)) - uSourceDirection);
   }
 `;
 
@@ -120,7 +121,7 @@ const fsLSource = `
       float mat_shininess = 10.0;
 
       vec3 I_ambient = source_ambient_color * mat_ambient_color;
-      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -dot(vNormal, sDirection));
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
       vec3 R = reflect(sDirection, vNormal);
       vec3 V = normalize(vView);
       vec3 I_specular = source_specular_color * mat_specular_color * pow(max(dot(R,V), 0.0), mat_shininess);
@@ -243,18 +244,18 @@ function create_octagon(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
-      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
 
     'faceColors' : [
-        [1.0,  1.0,  1.0,  1.0],    // Right face: white
-        [1.0,  1.0,  1.0,  1.0],    // Top Right face: white
-        [1.0,  1.0,  1.0,  1.0],    // Top face: white
-        [1.0,  1.0,  1.0,  1.0],    // Top Left Right face: white
-        [1.0,  1.0,  1.0,  1.0],    // Left face: white
-        [1.0,  1.0,  1.0,  1.0],    // Bottom Left face: white
-        [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
-        [1.0,  1.0,  1.0,  1.0],    // Bottom Right face: white
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Right face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Top Left Right face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Left face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Left face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom face: random
+        [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: random
     ],
 
     'indices' : [
@@ -380,7 +381,7 @@ function create_octagon0(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
-      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
 
     'faceColors' : [
@@ -517,7 +518,7 @@ function create_octagon1(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
-      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/8), 0,
+      radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
 
     'faceColors' : [
@@ -597,40 +598,40 @@ function create_cuboid(radius){
 
     'normals' : [
       // Right face
-      len, height, wid,
-      len, height, -wid,
-      len, -height, -wid,
-      len, -height, wid,
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
+      1, 0, 0,
 
       // Left face
-      -len, height, wid,
-      -len, height, -wid,
-      -len, -height, -wid,
-      -len, -height, wid,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
+      -1, 0, 0,
 
       // Top faces
-      -len, height, wid,
-      len, height, wid,
-      len, height, -wid,
-      -len, height, -wid,
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
+      0, 1, 0,
 
       // Bottom faces
-      -len, -height, wid,
-      len, -height, wid,
-      len, -height, -wid,
-      -len, -height, -wid,
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
+      0, -1, 0,
 
       // Front face
-      -len, height, wid,
-      len, height, wid,
-      len, -height, wid,
-      -len, -height, wid,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
 
       // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      len, -height, -wid,
-      -len, -height, -wid,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
     ],
 
     'faceColors' : [
@@ -732,65 +733,65 @@ function create_2triangles(radius){
     'normals' : [
       // Top triangle
       // Right face
-      0, 0, wid,
-      0, 0, -wid,
-      len, height, -wid,
-      len, height, wid,
+      Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
+      Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
+      Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
+      Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
 
       // Left face
-      0, 0, wid,
-      0, 0, -wid,
-      -len, height, -wid,
-      -len, height, wid,
+      Math.cos(-7*Math.PI/8), Math.cos(-7*Math.PI/8), 0,
+      Math.cos(-7*Math.PI/8), Math.cos(-7*Math.PI/8), 0,
+      Math.cos(-7*Math.PI/8), Math.cos(-7*Math.PI/8), 0,
+      Math.cos(-7*Math.PI/8), Math.cos(-7*Math.PI/8), 0,
 
       // Top faces
-      -len, height, wid,
-      len, height, wid,
-      len, height, -wid,
-      -len, height, -wid,
+      Math.cos(4*Math.PI/8), Math.cos(4*Math.PI/8), 0,
+      Math.cos(4*Math.PI/8), Math.cos(4*Math.PI/8), 0,
+      Math.cos(4*Math.PI/8), Math.cos(4*Math.PI/8), 0,
+      Math.cos(4*Math.PI/8), Math.cos(4*Math.PI/8), 0,
 
       // Front face
-      -len, height, wid,
-      len, height, wid,
-      0, 0, wid,
-      len, height, wid,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
 
       // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      0, 0, -wid,
-      len, height, -wid,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
 
       // Bottom triangle
       // Right face
-      0, 0, wid,
-      0, 0, -wid,
-      len, -height, -wid,
-      len, -height, wid,
+      Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
+      Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
+      Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
+      Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
 
       // Left face
-      0, 0, wid,
-      0, 0, -wid,
-      -len, -height, -wid,
-      -len, -height, wid,
+      Math.cos(7*Math.PI/8), Math.cos(7*Math.PI/8), 0,
+      Math.cos(7*Math.PI/8), Math.cos(7*Math.PI/8), 0,
+      Math.cos(7*Math.PI/8), Math.cos(7*Math.PI/8), 0,
+      Math.cos(7*Math.PI/8), Math.cos(7*Math.PI/8), 0,
 
-      // Top faces
-      -len, -height, wid,
-      len, -height, wid,
-      len, -height, -wid,
-      -len, -height, -wid,
+      // Bottom faces
+      Math.cos(-4*Math.PI/8), Math.cos(-4*Math.PI/8), 0,
+      Math.cos(-4*Math.PI/8), Math.cos(-4*Math.PI/8), 0,
+      Math.cos(-4*Math.PI/8), Math.cos(-4*Math.PI/8), 0,
+      Math.cos(-4*Math.PI/8), Math.cos(-4*Math.PI/8), 0,
 
       // Front face
-      -len, -height, wid,
-      len, -height, wid,
-      0, 0, wid,
-      len, -height, wid,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
+      0, 0, 1,
 
       // Back face
-      -len, -height, -wid,
-      len, -height, -wid,
-      0, 0, -wid,
-      len, -height, -wid,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
     ],
 
     'faceColors' : [
@@ -1123,12 +1124,12 @@ function set_source_color(key){
         source_diffuse_color = [Math.random(), Math.random(), Math.random()];
         source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
     }
-    console.log(source_diffuse_color);
-    console.log(source_ambient_color);
+    // console.log(source_diffuse_color);
+    // console.log(source_ambient_color);
 }
 
 function refresh_tunnel(gl, shapes, buffers){
-    if(shapes.length && shapes[0].position[2] > 2*shapes_offset){
+    if(shapes.length && shapes[0].position[2] > 2*remove_offset){
         shapes.shift();
         buffers.shift();
         count_shapes--;
@@ -1258,7 +1259,7 @@ function initBuffers(gl, shape) {
 
   const normalBuffer = gl.createBuffer();
 
-  // Select the positionBuffer as the one to apply buffer
+  // Select the normalBuffer as the one to apply buffer
   // operations to from here out.
 
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
