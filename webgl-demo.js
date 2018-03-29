@@ -7,6 +7,7 @@ var pause = 0;
 var move = 1;
 var quit = 0;
 var toggleColour = 0; //0 for keep it as it is, 1 for toggle
+var toggleGrayscale = 0; //0 for Grayscale, 1 for Colourfull
 var colour = 0; //0 for original, 1 for shader
 var frames = 0;
 var level_frames = 1200;
@@ -839,7 +840,14 @@ main();
 //
 // Start here
 //
-function main() {
+
+function main(){
+    document.onkeydown = handleKeyDown;
+    document.onkeyup = handleKeyUp;
+    playGame();
+}
+
+function playGame() {
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -890,9 +898,6 @@ function main() {
   }
 
   var then = 0;
-
-  document.onkeydown = handleKeyDown;
-  document.onkeyup = handleKeyUp;
 
   var theta = 0;
   // Draw the scene repeatedly
@@ -1031,6 +1036,10 @@ function handleKeyUp(event){
             obstacles[i].rotationZ += Math.PI;
         }
     }
+    else if(event.keyCode == 71){
+        // G Key
+        toggleGrayscale = 1 - toggleGrayscale;
+    }
     else if(48 <= event.keyCode && event.keyCode < 58){
         set_source_color(event.keyCode - 48);
     }
@@ -1133,13 +1142,23 @@ function refresh_tunnel(gl, shapes, buffers){
         shapes.shift();
         buffers.shift();
         count_shapes--;
-        // if(shapes[count_shapes-1].category){
-        //     shapes.push(create_octagon0());
-        // }
-        // else{
-        //     shapes.push(create_octagon1());
-        // }
-        shapes.push(create_octagon(radius_object));
+        switch(toggleGrayscale){
+            case 0:{
+                if(shapes[count_shapes-1].category){
+                    shapes.push(create_octagon0(radius_object));
+                }
+                else{
+                    shapes.push(create_octagon1(radius_object));
+                }
+                break;
+            }
+            case 1:{
+                shapes.push(create_octagon(radius_object));
+                break;
+            }
+            default:
+                break;
+        }
         count_shapes++;
         shapes[count_shapes - 1].position[2] = shapes[count_shapes - 2].position[2] - 2*radius_object;
         shapes[count_shapes - 1].rotationX = shapes[count_shapes - 2].rotationX;

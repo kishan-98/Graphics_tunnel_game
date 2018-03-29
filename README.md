@@ -9,6 +9,7 @@ Key Console:
     C: Change shader
     J: Jump
     G: Toggle Grayscale
+    R: Reset Game
     0-9: Change source colour
 
 0 Black
