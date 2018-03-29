@@ -26,14 +26,19 @@ var remove_offset = 5*radius_object;
 var count_obstacles = 2;
 var count_type_obstacles = 2;
 
+// Camera global variables
+var camera_position = [0.0, 0.0, 0.0];
+var camera_target = [0.0, 0.0, -1.0];
+var camera_up = [0.0, 1.0, 0.0];
+
 // Shader global variables
 
 var ambient_factor = 5;
 var source_ambient_color = [0.2, 0.2, 0.2];
 var source_diffuse_color = [1.0, 1.0, 1.0];
-var source_specular_color = [1.0, 1.0, 1.0];
+var source_specular_color = [0.4, 0.4, 0.4];
 var source_rotation = 0;
-var source_direction = [0.0, 0*0.5*radius_object*Math.cos(source_rotation), -0*radius_object];
+var source_position = [0.0, 0.5*radius_object, -1.0*radius_object];
 var shaderProgram;
 var programInfo;
 
@@ -77,7 +82,7 @@ const vsSource = `
   uniform vec3 uSourceAmbientColor;
   uniform vec3 uSourceDiffuseColor;
   uniform vec3 uSourceSpecularColor;
-  uniform vec3 uSourceDirection;
+  uniform vec3 uSourcePosition;
 
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
@@ -90,12 +95,12 @@ const vsSource = `
   void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
     vColor = aVertexColor;
-    vNormal = normalize(vec3(uModelMatrix * vec4(aNormal, 0.0)));
+    vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
     vView = vec3(uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0));
     sAColor = uSourceAmbientColor;
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
-    sDirection = normalize(vec3(uModelMatrix * vec4(aVertexPosition, 1.0)) - uSourceDirection);
+    sDirection = vec3(uModelMatrix * vec4(aVertexPosition, 1.0)) - uSourcePosition;
   }
 `;
 
@@ -116,17 +121,17 @@ const fsLSource = `
       vec3 source_diffuse_color = sDColor;
       vec3 source_specular_color = sSColor;
 
-      vec3 mat_ambient_color = vColor.xyz;
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
       vec3 mat_diffuse_color = vColor.xyz;
       vec3 mat_specular_color = vColor.xyz;
-      float mat_shininess = 10.0;
+      float mat_shininess = 1.0;
 
       vec3 I_ambient = source_ambient_color * mat_ambient_color;
       vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
       vec3 R = reflect(sDirection, vNormal);
       vec3 V = normalize(vView);
-      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(dot(R,V), 0.0), mat_shininess);
-      vec3 I = I_diffuse;
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      vec3 I = I_specular;
       gl_FragColor = vec4(I, 1.0)*vColor;
   }
 `;
@@ -599,40 +604,40 @@ function create_cuboid(radius){
 
     'normals' : [
       // Right face
-      1, 0, 0,
-      1, 0, 0,
-      1, 0, 0,
-      1, 0, 0,
+      radius, 0, 0,
+      radius, 0, 0,
+      radius, 0, 0,
+      radius, 0, 0,
 
       // Left face
-      -1, 0, 0,
-      -1, 0, 0,
-      -1, 0, 0,
-      -1, 0, 0,
+      -radius, 0, 0,
+      -radius, 0, 0,
+      -radius, 0, 0,
+      -radius, 0, 0,
 
       // Top faces
-      0, 1, 0,
-      0, 1, 0,
-      0, 1, 0,
-      0, 1, 0,
+      0, radius, 0,
+      0, radius, 0,
+      0, radius, 0,
+      0, radius, 0,
 
       // Bottom faces
-      0, -1, 0,
-      0, -1, 0,
-      0, -1, 0,
-      0, -1, 0,
+      0, -radius, 0,
+      0, -radius, 0,
+      0, -radius, 0,
+      0, -radius, 0,
 
       // Front face
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
-      0, 0, 1,
+      0, 0, radius,
+      0, 0, radius,
+      0, 0, radius,
+      0, 0, radius,
 
       // Back face
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
     ],
 
     'faceColors' : [
@@ -835,6 +840,113 @@ function create_2triangles(radius){
     'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
 }
 
+function create_light_source(radius){
+    var len = radius, height = radius, wid = radius;
+    return {'position'  : [0.0, 0.5*radius_object, -2*radius_object],
+    'positions' : [
+      // Right face
+      len, height, wid,
+      len, height, -wid,
+      len, -height, -wid,
+      len, -height, wid,
+
+      // Left face
+      -len, height, wid,
+      -len, height, -wid,
+      -len, -height, -wid,
+      -len, -height, wid,
+
+      // Top faces
+      -len, height, wid,
+      len, height, wid,
+      len, height, -wid,
+      -len, height, -wid,
+
+      // Bottom faces
+      -len, -height, wid,
+      len, -height, wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
+      // Front face
+      -len, height, wid,
+      len, height, wid,
+      len, -height, wid,
+      -len, -height, wid,
+
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+    ],
+
+    'normals' : [
+      // Right face
+      radius, 0, 0,
+      radius, 0, 0,
+      radius, 0, 0,
+      radius, 0, 0,
+
+      // Left face
+      -radius, 0, 0,
+      -radius, 0, 0,
+      -radius, 0, 0,
+      -radius, 0, 0,
+
+      // Top faces
+      0, radius, 0,
+      0, radius, 0,
+      0, radius, 0,
+      0, radius, 0,
+
+      // Bottom faces
+      0, -radius, 0,
+      0, -radius, 0,
+      0, -radius, 0,
+      0, -radius, 0,
+
+      // Front face
+      0, 0, radius,
+      0, 0, radius,
+      0, 0, radius,
+      0, 0, radius,
+
+      // Back face
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+    ],
+
+    'faceColors' : [
+      [1.0,  1.0,  1.0,  1.0],    // Right face: white
+      [1.0,  1.0,  1.0,  1.0],    // Left face: white
+      [1.0,  1.0,  1.0,  1.0],    // Top face: white
+      [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
+      [1.0,  1.0,  1.0,  1.0],    // Front face: white
+      [1.0,  1.0,  1.0,  1.0],    // Back face: white
+    ],
+
+    'indices' : [
+      0,  1,  2,      0,  2,  3,    // right
+      4,  5,  6,      4,  6,  7,    // left
+      8,  9,  10,     8,  10, 11,   // top
+      12, 13, 14,     12, 14, 15,   // bottom
+      16, 17, 18,     16, 18, 19,   // front
+      20, 21, 22,     20, 22, 23,   // back
+    ],
+
+    'numComponentsPosition' : 3,
+    'numComponentsColor' : 4,
+    'vertexCount' : 36,
+    'rotationX' : 0,
+    'rotationY' : 0,
+    'rotationZ' : 0,
+    'speed'     : 7*radius,
+    'rotation'  : 0,}
+}
+
 main();
 
 //
@@ -844,6 +956,8 @@ main();
 function main(){
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
+    document.onmousemove = hoverMouse;
+    // document.onmouseover = console.log("kishan");
     playGame();
 }
 
@@ -897,6 +1011,9 @@ function playGame() {
       buffer_obstacles.push(initBuffers(gl, obstacles[i]));
   }
 
+  light_source = create_light_source(radius_object/10);
+  buffer_light_source = initBuffers(gl, light_source);
+
   var then = 0;
 
   var theta = 0;
@@ -917,6 +1034,7 @@ function playGame() {
         obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
+    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && shakey_frames > 0){
         requestAnimationFrame(shakey_screen);
     }
@@ -937,7 +1055,7 @@ function playGame() {
     then = now;
     refresh_tunnel(gl, shapes, buffer_shapes);
     refresh_obstacles(gl, obstacles, buffer_obstacles);
-    handleKeys(shapes, obstacles);
+    handleKeys(shapes, obstacles, light_source);
     if(toggleColour){
         colour = 1 - colour;
         changeShader(gl);
@@ -953,6 +1071,7 @@ function playGame() {
         obstacles[i].rotationZ += (1 - pause) * obstacles[i].rotation * deltaTime;
         drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
     }
+    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && !detect_collision(shapes, obstacles)){
         requestAnimationFrame(render);
     }
@@ -1048,7 +1167,24 @@ function handleKeyUp(event){
     }
 }
 
-function handleKeys(shapes, obstacles){
+function hoverMouse(event){
+    // console.log(event.clientX);
+    // console.log(event.clientY);
+    var this_X = Math.min(Math.max(event.clientX, 60), 700);
+    var this_Y = Math.min(Math.max(event.clientY, 23), 503);
+    var curr_X = (this_X - 60.0)/640.0;
+    var theta = (1.5 - 2*curr_X) * Math.PI;
+    var curr_Y = (this_Y - 23.0)/480.0;
+    var phi = (0.5 - curr_Y) * Math.PI;
+    // var element = document.getElementById("theta");
+    // element.innerHTML = "theta: " + theta.toString();
+    // element = document.getElementById("phi");
+    // element.innerHTML = "phi: " + phi.toString();
+    camera_target = [Math.cos(theta) * Math.cos(phi), Math.sin(phi), -Math.sin(theta) * Math.cos(phi)];
+    camera_up = [0, Math.cos(phi), Math.sin(phi)];
+}
+
+function handleKeys(shapes, obstacles, light_source){
     if(!pause){
         if(statusKeys[38]){
             // Up Key
@@ -1077,7 +1213,7 @@ function handleKeys(shapes, obstacles){
                 obstacles[i].rotationZ += shapes[0].rotation;
             }
             source_rotation += shapes[0].rotation;
-            // source_direction[1] = 0.5*radius_object*Math.cos(source_rotation);
+            // source_position[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
         if(statusKeys[39]){
             // Right Key
@@ -1088,7 +1224,7 @@ function handleKeys(shapes, obstacles){
                 obstacles[i].rotationZ -= shapes[0].rotation;
             }
             source_rotation -= shapes[0].rotation;
-            // source_direction[1] = 0.5*radius_object*Math.cos(source_rotation);
+            // source_position[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
         // if(statusKeys[32]){
         //     // Space Key
@@ -1101,25 +1237,31 @@ function handleKeys(shapes, obstacles){
         // }
         if(statusKeys[87]){
             // W Key
-            for(var i = 0; i < count_shapes; i++){
-                shapes[i].rotationX -= shapes[i].rotation;
-                shapes[i].position[2] -= 0.1;
+            source_position[2] -= shapes[0].speed / speed;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0.0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
             }
-            // for(var i = 0; i < count_obstacles; i++){
-            //     obstacles[i].rotationX -= obstacles[i].rotation;
-            //     obstacles[i].position[2] -= 0.1;
-            // }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("w key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
         }
         if(statusKeys[83]){
             // S Key
-            for(var i = 0; i < count_shapes; i++){
-                shapes[i].rotationX += shapes[i].rotation;
-                shapes[i].position[2] += 0.1;
+            source_position[2] += shapes[0].speed / speed;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
             }
-            // for(var i = 0; i < count_obstacles; i++){
-            //     obstacles[i].rotationX += obstacles[i].rotation;
-            //     obstacles[i].position[2] += 0.1;
-            // }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("s key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
         }
     }
 }
@@ -1342,11 +1484,8 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
   // the center of the scene.
   const modelMatrix = mat4.create();
 
-  // var camera_position = Vec3(0.0, 0.0, 0.0);
-  // var camera_target = Vec3(0.0, 0.0, 1.0);
-  // var camera_up = Vec3(0.0, 1.0, 0.0);
-
-  const viewMatrix = mat4.create();//mat4.lookAt(camera_position, camera_target, camera_up);
+  const viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix, camera_position, camera_target, camera_up);
 
   // Now move the drawing position a bit to where we want to
   // start drawing the square.
@@ -1464,10 +1603,10 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_specular_color[1],
       source_specular_color[2]);
   gl.uniform3f(
-      programInfo.uniformLocations.sourceDirection,
-      source_direction[0],
-      source_direction[1],
-      source_direction[2]);
+      programInfo.uniformLocations.sourcePosition,
+      source_position[0],
+      source_position[1],
+      source_position[2]);
 
   {
     const vertexCount = shape.vertexCount;
@@ -1553,7 +1692,7 @@ function changeShader(gl){
         sourceAmbientColor: gl.getUniformLocation(shaderProgram, 'uSourceAmbientColor'),
         sourceDiffuseColor: gl.getUniformLocation(shaderProgram, 'uSourceDiffuseColor'),
         sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
-        sourceDirection: gl.getUniformLocation(shaderProgram, 'uSourceDirection'),
+        sourcePosition: gl.getUniformLocation(shaderProgram, 'uSourcePosition'),
       },
     };
 }

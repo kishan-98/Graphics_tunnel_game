@@ -1,0 +1,29 @@
+body {
+    background-color: lightblue;
+}
+
+h3 {
+    color: purple;
+    margin-left: 20px;
+}
+
+.left {
+    /* border: 25px solid lightyellow; */
+    padding: 25px;
+    margin: 25px;
+    float: left;
+}
+
+.center {
+    /* border: 25px solid lightyellow; */
+    padding: 25px;
+    margin: 25px;
+    float: center;
+}
+
+.right {
+    /* border: 25px solid lightyellow; */
+    padding: 25px;
+    margin: 25px;
+    float: right;
+}
