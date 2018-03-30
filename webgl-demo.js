@@ -27,7 +27,7 @@ var current_rotation = 0;
 
 // Shapes global variables
 
-var radius_object = 1;
+var radius_object = 3;
 var count_shapes = 15;
 var shapes_offset = 15*radius_object;
 var remove_offset = 5*radius_object;
@@ -1345,7 +1345,8 @@ function playGame() {
   }
 
   changeShader(gl);
-  changeTexture(gl, textures_urls[texture]);
+  var textureObject = initTexture(gl);
+  changeTexture(gl, textureObject, textures_urls[texture]);
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
@@ -1435,7 +1436,7 @@ function playGame() {
     }
     if(toggleTexture){
         texture = (texture + 1)%total_texture;
-        changeTexture(gl, textures_urls[texture]);
+        changeTexture(gl, textureObject, textures_urls[texture]);
         toggleTexture = 0;
     }
     const projectionMatrix = clearScene(gl);
@@ -2168,12 +2169,11 @@ function requestCORSIfNotSameOrigin(image, image_url) {
 }
 
 // Change the image of texture
-function changeTexture(gl, image_url){
+function changeTexture(gl, texture, image_url){
     var image = new Image();
     requestCORSIfNotSameOrigin(image, image_url);
     image.src = image_url;
     image.addEventListener('load', function(){
-      var texture = gl.createTexture();
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
