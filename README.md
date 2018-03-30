@@ -13,6 +13,7 @@ Key Console:
     T: Toggle texture if texture shader is active
     J: Jump
     G: Toggle Grayscale
+    B: Toggle Blending
     R: Reset Game
     W: Move light source ahead in tunnel
     S: Move light source behind in tunnel

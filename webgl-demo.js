@@ -17,6 +17,7 @@ var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef3
                         'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png',
                         'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png',];
 var total_texture = textures_urls.length;
+var blend = 0;
 var frames = 0;
 var level_frames = 1200;
 var shakey_frames = 120;
@@ -115,6 +116,17 @@ const vsSource = `
   }
 `;
 
+// Fragment shader program without lighting
+
+const fsSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  void main(void) {
+      gl_FragColor = vColor;
+  }
+`;
+
 // Fragment shader program for lighting
 
 const fsLSource = `
@@ -168,7 +180,7 @@ const fsTSource = `
 
 // Fragment shader program for lighting and texture
 
-const fsLTSource = `
+const fsTLSource = `
   precision lowp float;
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
@@ -208,14 +220,107 @@ const fsLTSource = `
   }
 `;
 
-// Fragment shader program without lighting
+// Fragment shader program with blending and without lighting
 
-const fsSource = `
+const fsBSource = `
   precision lowp float;
   varying lowp vec4 vColor;
 
   void main(void) {
       gl_FragColor = vColor;
+  }
+`;
+
+// Fragment shader program with blending and lighting
+
+const fsBLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, 1.0)*vColor;
+  }
+`;
+
+// Fragment shader program with blending and texture
+
+const fsBTSource = `
+  precision lowp float;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      gl_FragColor = texture2D(uSampler, vTexture);
+  }
+`;
+
+// Fragment shader program with blending and lighting and texture
+
+const fsBTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, 1.0)*vColor*color;
   }
 `;
 
@@ -1559,6 +1664,10 @@ function handleKeyUp(event){
         // G Key
         toggleGrayscale = 1 - toggleGrayscale;
     }
+    else if(event.keyCode == 66){
+        // B Key
+        blend = 1 - blend;
+    }
     else if(48 <= event.keyCode && event.keyCode < 58){
         set_source_color(event.keyCode - 48);
     }
@@ -1771,7 +1880,10 @@ function clearScene(gl){
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
     gl.depthFunc(gl.LESS);            // Near things obscure far things
-
+    if(blend){
+        gl.disable(gl.DEPTH_TEST);
+        gl.enable(gl.BLEND);
+    }
     // Clear the canvas before we start drawing on it.
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -2114,7 +2226,7 @@ function getShader(gl, color){
             return initShaderProgram(gl, vsSource, fsTSource)
         }
         case 3:{
-            return initShaderProgram(gl, vsSource, fsLTSource)
+            return initShaderProgram(gl, vsSource, fsTLSource)
         }
         default:{
             return initShaderProgram(gl, vsSource, fsSource)
