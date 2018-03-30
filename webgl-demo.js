@@ -1520,29 +1520,19 @@ function handleKeyUp(event){
         // M Key
         move = 1 - move;
     }
-    else if(event.keyCode == 90){
-        // Z Key
+    else if(event.keyCode == 76){
+        // L Key
         toggleColour = 1;
-        colour = 0;
-    }
-    else if(event.keyCode == 88){
-        // X Key
-        toggleColour = 1;
-        colour = 1;
-    }
-    else if(event.keyCode == 67){
-        // C Key
-        toggleColour = 1;
-        colour = 2;
-    }
-    else if(event.keyCode == 86){
-        // V Key
-        toggleColour = 1;
-        colour = 3;
+        colour ^= 1;
     }
     else if(event.keyCode == 84){
         // T Key
-        if(colour == 2 || colour == 3){
+        toggleColour = 1;
+        colour ^= 2;
+    }
+    else if(event.keyCode == 89){
+        // Y Key
+        if(colour&2){
             toggleTexture = 1;
         }
     }

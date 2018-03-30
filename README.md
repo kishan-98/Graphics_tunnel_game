@@ -6,11 +6,9 @@ Key Console:
     Q: Quit
     P: Toggle pause
     M: Toggle special pause
-    Z: no shader or texture
-    X: only shader
-    C: only texture
-    V: both shader and texture
-    T: Toggle texture if texture shader is active
+    L: Toggle lighting shader
+    T: Toggle texture shader
+    Y: Toggle texture if texture shader is active
     J: Jump
     G: Toggle Grayscale
     R: Reset Game
