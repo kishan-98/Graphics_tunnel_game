@@ -1770,7 +1770,7 @@ function clearScene(gl){
     gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to gray, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-    gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+    gl.depthFunc(gl.LESS);            // Near things obscure far things
 
     // Clear the canvas before we start drawing on it.
 
