@@ -2,6 +2,11 @@ Graphics Assignment 3
 Tunnel Rush
 - with shaders
 
+********************************************************************
+Run this command if you are opening the webgl in chrome
+open -a Google\ Chrome --args --disable-web-security --user-data-dir
+********************************************************************
+
 Key Console:
     Q: Quit
     P: Toggle pause
@@ -17,6 +22,7 @@ Key Console:
     S: Move light source behind in tunnel
     0-9: Change source colour
 
+Source Colours:
 0 Black
 1 Blue
 2 Green
