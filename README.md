@@ -10,6 +10,7 @@ Key Console:
     X: only shader
     C: only texture
     V: both shader and texture
+    T: Toggle texture if texture shader is active
     J: Jump
     G: Toggle Grayscale
     R: Reset Game

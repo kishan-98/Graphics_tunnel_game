@@ -6,9 +6,17 @@ var speed_level = [0, 3, 5];
 var pause = 0;
 var move = 1;
 var quit = 0;
-var toggleColour = 0; //0 for keep it as it is, 1 for toggle
 var toggleGrayscale = 0; //0 for Grayscale, 1 for Colourfull
 var colour = 0; //0 for original, 1 for shader
+var toggleColour = 0; //0 for keep it as it is, 1 for toggle
+var texture = 0;
+var toggleTexture = 0;
+var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg',
+                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/f-texture.png',
+                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/wall-texture.jpg',
+                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png',
+                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png',];
+var total_texture = textures_urls.length;
 var frames = 0;
 var level_frames = 1200;
 var shakey_frames = 120;
@@ -145,16 +153,58 @@ const fsLSource = `
   }
 `;
 
+// Fragment shader program for texture
+
 const fsTSource = `
   precision lowp float;
   varying lowp vec2 vTexture;
-  varying lowp vec4 vColor;
 
   uniform sampler2D uSampler;
 
   void main(void) {
       gl_FragColor = texture2D(uSampler, vTexture);
-      // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+  }
+`;
+
+// Fragment shader program for lighting and texture
+
+const fsLTSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, 1.0)*vColor*color;
   }
 `;
 
@@ -1295,12 +1345,7 @@ function playGame() {
   }
 
   changeShader(gl);
-  // changeTexture(gl, '');
-  // changeTexture(gl, 'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg');
-  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/f-texture.png');
-  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/wall-texture.jpg');
-  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png');
-  changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png');
+  changeTexture(gl, textures_urls[texture]);
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
@@ -1385,9 +1430,13 @@ function playGame() {
     refresh_obstacles(gl, obstacles, buffer_obstacles);
     handleKeys(shapes, obstacles, light_source);
     if(toggleColour){
-        colour = 1 - colour;
         changeShader(gl);
         toggleColour = 0;
+    }
+    if(toggleTexture){
+        texture = (texture + 1)%total_texture;
+        changeTexture(gl, textures_urls[texture]);
+        toggleTexture = 0;
     }
     const projectionMatrix = clearScene(gl);
     for (var i = 0; i < count_shapes; i++){
@@ -1470,9 +1519,31 @@ function handleKeyUp(event){
         // M Key
         move = 1 - move;
     }
+    else if(event.keyCode == 90){
+        // Z Key
+        toggleColour = 1;
+        colour = 0;
+    }
+    else if(event.keyCode == 88){
+        // X Key
+        toggleColour = 1;
+        colour = 1;
+    }
     else if(event.keyCode == 67){
         // C Key
         toggleColour = 1;
+        colour = 2;
+    }
+    else if(event.keyCode == 86){
+        // V Key
+        toggleColour = 1;
+        colour = 3;
+    }
+    else if(event.keyCode == 84){
+        // T Key
+        if(colour == 2 || colour == 3){
+            toggleTexture = 1;
+        }
     }
     else if(event.keyCode == 74){
         // J Key
@@ -2033,10 +2104,27 @@ function loadShader(gl, type, source) {
   return shader;
 }
 
+function getShader(gl, color){
+    switch(color){
+        case 1:{
+            return initShaderProgram(gl, vsSource, fsLSource)
+        }
+        case 2:{
+            return initShaderProgram(gl, vsSource, fsTSource)
+        }
+        case 3:{
+            return initShaderProgram(gl, vsSource, fsLTSource)
+        }
+        default:{
+            return initShaderProgram(gl, vsSource, fsSource)
+        }
+    }
+}
+
 function changeShader(gl){
     // Initialize a shader program; this is where all the lighting
     // for the vertices and so forth is established.
-    shaderProgram = (colour ? initShaderProgram(gl, vsSource, fsTSource) : initShaderProgram(gl, vsSource, fsSource));
+    shaderProgram = getShader(gl, colour);
 
     // Collect all the info needed to use the shader program.
     // Look up which attributes our shader program is using
