@@ -220,14 +220,16 @@ const fsTLSource = `
   }
 `;
 
-// Fragment shader program with blending and without lighting
+// Fragment shader program for blending
 
 const fsBSource = `
   precision lowp float;
   varying lowp vec4 vColor;
 
+  uniform float uAlpha;
+
   void main(void) {
-      gl_FragColor = vColor;
+      gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);//vec4(vColor.rgb, vColor.a*uAlpha);
   }
 `;
 
@@ -242,6 +244,8 @@ const fsBLSource = `
   varying lowp vec3 sDColor;
   varying lowp vec3 sSColor;
   varying lowp vec3 sDirection;
+
+  uniform float uAlpha;
 
   void main(void) {
       vec3 source_ambient_color = sAColor;
@@ -265,24 +269,26 @@ const fsBLSource = `
       // vec3 I = I_ambient + I_specular;
       // vec3 I = I_diffuse + I_specular;
       vec3 I = I_ambient + I_diffuse + I_specular;
-      gl_FragColor = vec4(I, 1.0)*vColor;
+      gl_FragColor = vec4(I, uAlpha)*vColor;
   }
 `;
 
-// Fragment shader program with blending and texture
+// Fragment shader program for blending and texture
 
 const fsBTSource = `
   precision lowp float;
   varying lowp vec2 vTexture;
 
   uniform sampler2D uSampler;
+  uniform float uAlpha;
 
   void main(void) {
-      gl_FragColor = texture2D(uSampler, vTexture);
+      vec4 textureColor = texture2D(uSampler, vTexture);
+      gl_FragColor = vec4(textureColor.rgb, textureColor.a * uAlpha);
   }
 `;
 
-// Fragment shader program with blending and lighting and texture
+// Fragment shader program for blending, lighting and texture
 
 const fsBTLSource = `
   precision lowp float;
@@ -296,6 +302,7 @@ const fsBTLSource = `
   varying lowp vec2 vTexture;
 
   uniform sampler2D uSampler;
+  uniform float uAlpha;
 
   void main(void) {
       vec4 color = texture2D(uSampler, vTexture);
@@ -320,12 +327,13 @@ const fsBTLSource = `
       // vec3 I = I_ambient + I_specular;
       // vec3 I = I_diffuse + I_specular;
       vec3 I = I_ambient + I_diffuse + I_specular;
-      gl_FragColor = vec4(I, 1.0)*vColor*color;
+      gl_FragColor = vec4(I, uAlpha)*vColor*color;
   }
 `;
 
 function create_octagon(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
@@ -427,6 +435,8 @@ function create_octagon(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
         [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: random
@@ -515,6 +525,7 @@ function create_octagon(radius){
 
 function create_octagon0(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
@@ -616,6 +627,8 @@ function create_octagon0(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       [1.0,  1.0,  1.0,  1.0],    // Right face: white
@@ -704,6 +717,7 @@ function create_octagon0(radius){
 
 function create_octagon1(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
     'positions' : [
@@ -805,6 +819,8 @@ function create_octagon1(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       [0.0,  0.0,  0.0,  1.0],    // Right face: white
@@ -894,6 +910,7 @@ function create_octagon1(radius){
 function create_cuboid(radius){
     var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
+    var blendAlpha = 0.5;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Right face
@@ -970,6 +987,8 @@ function create_cuboid(radius){
       0, 0, -radius,
       0, 0, -radius,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
@@ -1042,6 +1061,7 @@ function create_cuboid(radius){
 function create_2triangles(radius){
     var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
+    var blendAlpha = 0.5;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Top triangle
@@ -1170,6 +1190,8 @@ function create_2triangles(radius){
       0, 0, -1,
       0, 0, -1,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       // Top triangle
@@ -1279,6 +1301,7 @@ function create_2triangles(radius){
 
 function create_light_source(radius){
     var len = radius, height = radius, wid = radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0.0, 0.5*radius_object, -2*radius_object],
     'positions' : [
       // Right face
@@ -1355,6 +1378,8 @@ function create_light_source(radius){
       0, 0, -radius,
       0, 0, -radius,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       [1.0,  1.0,  1.0,  1.0],    // Right face: white
@@ -1505,13 +1530,30 @@ function playGame() {
     const deltaTime = now - then;
     then = now;
     const projectionMatrix = clearScene(gl);
-    for (var i = 0; i < count_shapes; i++){
-        shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+    var i = count_shapes - 1, j = count_obstacles - 1;
+    while(i >= 0 && j >= 0){
+        if(shapes[i].position[2] < obstacles[j].position[2]){
+            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+            drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+            i--;
+        }
+        else{
+            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+            obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+            drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+            j--;
+        }
     }
-    for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
+    while(i >= 0){
+        shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+        i--;
+    }
+    while(j >= 0){
+        obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+        obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+        drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+        j--;
     }
     drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && shakey_frames > 0){
@@ -1545,14 +1587,30 @@ function playGame() {
         toggleTexture = 0;
     }
     const projectionMatrix = clearScene(gl);
-    for (var i = 0; i < count_shapes; i++){
+    var i = count_shapes - 1, j = count_obstacles - 1;
+    while(i >= 0 && j >= 0){
+        if(shapes[i].position[2] < obstacles[j].position[2]){
+            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+            drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+            i--;
+        }
+        else{
+            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+            obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+            drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+            j--;
+        }
+    }
+    while(i >= 0){
         shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
         drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+        i--;
     }
-    for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[2] += move * (1 - pause) * obstacles[i].speed * deltaTime;
-        obstacles[i].rotationZ += (1 - pause) * obstacles[i].rotation * deltaTime;
-        drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
+    while(j >= 0){
+        obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+        obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+        drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+        j--;
     }
     drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && !detect_collision(shapes, obstacles)){
@@ -1866,13 +1924,20 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
 }
 
 function clearScene(gl){
-    gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to gray, fully opaque
+    gl.clearColor(0.5, 0.5, 0.5, 0.0);  // Clear to gray, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
-    gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-    gl.depthFunc(gl.LESS);            // Near things obscure far things
     if(blend){
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_APLHA, gl.ONE);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.ONE, gl.ONE, gl.ONE, gl.ONE);
+    }
+    else{
+        gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+        gl.disable(gl.BLEND);
+        gl.depthFunc(gl.LESS);            // Near things obscure far things
     }
     // Clear the canvas before we start drawing on it.
 
@@ -2145,6 +2210,7 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[1],
       source_position[2]);
   gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
+  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
 
   {
     const vertexCount = shape.vertexCount;
@@ -2218,6 +2284,18 @@ function getShader(gl, color){
         case 3:{
             return initShaderProgram(gl, vsSource, fsTLSource)
         }
+        case 4:{
+            return initShaderProgram(gl, vsSource, fsBSource)
+        }
+        case 5:{
+            return initShaderProgram(gl, vsSource, fsBLSource)
+        }
+        case 6:{
+            return initShaderProgram(gl, vsSource, fsBTSource)
+        }
+        case 7:{
+            return initShaderProgram(gl, vsSource, fsBTLSource)
+        }
         default:{
             return initShaderProgram(gl, vsSource, fsSource)
         }
@@ -2250,6 +2328,7 @@ function changeShader(gl){
         sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
         sourcePosition: gl.getUniformLocation(shaderProgram, 'uSourcePosition'),
         samplerTexture: gl.getUniformLocation(shaderProgram, 'uSampler'),
+        fragmentAlpha: gl.getUniformLocation(shaderProgram, 'uAlpha'),
       },
     };
 }
