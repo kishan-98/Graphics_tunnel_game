@@ -6,7 +6,10 @@ Key Console:
     Q: Quit
     P: Toggle pause
     M: Toggle special pause
-    C: Change shader
+    Z: no shader or texture
+    X: only shader
+    C: only texture
+    V: both shader and texture
     J: Jump
     G: Toggle Grayscale
     R: Reset Game

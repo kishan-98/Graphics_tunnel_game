@@ -75,6 +75,7 @@ const vsSource = `
   attribute vec3 aVertexPosition;
   attribute vec4 aVertexColor;
   attribute vec3 aNormal;
+  attribute vec2 aTexture;
 
   uniform mat4 uModelMatrix;
   uniform mat4 uViewMatrix;
@@ -87,6 +88,7 @@ const vsSource = `
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
+  varying lowp vec2 vTexture;
   varying lowp vec3 sAColor;
   varying lowp vec3 sDColor;
   varying lowp vec3 sSColor;
@@ -97,6 +99,7 @@ const vsSource = `
     vColor = aVertexColor;
     vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
     vView = vec3(-uViewMatrix[0][2], -uViewMatrix[1][2], -uViewMatrix[2][2]);
+    vTexture = aTexture;
     sAColor = uSourceAmbientColor;
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
@@ -142,13 +145,24 @@ const fsLSource = `
   }
 `;
 
+const fsTSource = `
+  precision lowp float;
+  varying lowp vec2 vTexture;
+  varying lowp vec4 vColor;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      gl_FragColor = texture2D(uSampler, vTexture);
+      // gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+  }
+`;
+
 // Fragment shader program without lighting
 
 const fsSource = `
   precision lowp float;
   varying lowp vec4 vColor;
-  varying lowp vec3 vNormal;
-  varying lowp vec3 vView;
 
   void main(void) {
       gl_FragColor = vColor;
@@ -270,6 +284,56 @@ function create_octagon(radius){
         [Math.random(),  Math.random(),  Math.random(),  1.0],    // Bottom Right face: random
     ],
 
+    'textures' : [
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left fact
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       0,  1,  2,      0,  2,  3,    // right
       4,  5,  6,      4,  6,  7,    // right top
@@ -283,6 +347,8 @@ function create_octagon(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 48,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -407,6 +473,56 @@ function create_octagon0(radius){
       [0.0,  0.0,  0.0,  1.0],    // Bottom Right face: black
     ],
 
+    'textures' : [
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left fact
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       0,  1,  2,      0,  2,  3,    // right
       4,  5,  6,      4,  6,  7,    // right top
@@ -420,6 +536,8 @@ function create_octagon0(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 48,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -544,6 +662,56 @@ function create_octagon1(radius){
       [1.0,  1.0,  1.0,  1.0],    // Bottom Right face: black
     ],
 
+    'textures' : [
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left fact
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       0,  1,  2,      0,  2,  3,    // right
       4,  5,  6,      4,  6,  7,    // right top
@@ -557,6 +725,8 @@ function create_octagon1(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 48,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -655,6 +825,44 @@ function create_cuboid(radius){
       [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
+    'textures' : [
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Front face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       0,  1,  2,      0,  2,  3,    // right
       4,  5,  6,      4,  6,  7,    // left
@@ -666,6 +874,8 @@ function create_cuboid(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 36,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -821,6 +1031,70 @@ function create_2triangles(radius){
       [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
+    'textures' : [
+      // Top triangle
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Front face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom triangle
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Front face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       // Top triangle
       0,  1,  2,      0,  2,  3,    // right
@@ -838,6 +1112,8 @@ function create_2triangles(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 60,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -934,6 +1210,44 @@ function create_light_source(radius){
       [1.0,  1.0,  1.0,  1.0],    // Back face: white
     ],
 
+    'textures' : [
+      // Right face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Left face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Top faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Bottom faces
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Front face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+    ],
+
     'indices' : [
       0,  1,  2,      0,  2,  3,    // right
       4,  5,  6,      4,  6,  7,    // left
@@ -945,6 +1259,8 @@ function create_light_source(radius){
 
     'numComponentsPosition' : 3,
     'numComponentsColor' : 4,
+    'numComponentsNormal' : 3,
+    'numComponentsTexture' : 2,
     'vertexCount' : 36,
     'rotationX' : 0,
     'rotationY' : 0,
@@ -979,6 +1295,12 @@ function playGame() {
   }
 
   changeShader(gl);
+  // changeTexture(gl, '');
+  // changeTexture(gl, 'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg');
+  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/f-texture.png');
+  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/wall-texture.jpg');
+  // changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png');
+  changeTexture(gl, 'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png');
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
@@ -1459,6 +1781,13 @@ function initBuffers(gl, shape) {
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
+  // Now create buffer for textures
+  const textures = shape.textures;
+
+  const textureBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textures), gl.STATIC_DRAW);
+
   // Build the element array buffer; this specifies the indices
   // into the vertex arrays for each face's vertices.
 
@@ -1481,6 +1810,7 @@ function initBuffers(gl, shape) {
     color: colorBuffer,
     indices: indexBuffer,
     normal: normalBuffer,
+    texture: textureBuffer,
   };
 }
 
@@ -1542,7 +1872,7 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
   // Tell WebGL how to pull out the normals from the vertex buffer
   // into the vertexNormal attribute.
   {
-    const numComponents = shape.numComponentsPosition;
+    const numComponents = shape.numComponentsNormal;
     const type = gl.FLOAT;
     const normalize = false;
     const stride = 0;
@@ -1577,6 +1907,26 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
         offset);
     gl.enableVertexAttribArray(
         programInfo.attribLocations.vertexColor);
+  }
+
+  // Tell WebGL how to pull out the textures from the texture buffer
+  // into the vertexTexture attribute.
+  {
+    const numComponents = shape.numComponentsTexture;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texture);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexTexture,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        programInfo.attribLocations.vertexTexture);
   }
 
   // Tell WebGL which indices to use to index the vertices
@@ -1620,6 +1970,7 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[0],
       source_position[1],
       source_position[2]);
+  gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
 
   {
     const vertexCount = shape.vertexCount;
@@ -1685,7 +2036,7 @@ function loadShader(gl, type, source) {
 function changeShader(gl){
     // Initialize a shader program; this is where all the lighting
     // for the vertices and so forth is established.
-    shaderProgram = (colour ? initShaderProgram(gl, vsSource, fsLSource) : initShaderProgram(gl, vsSource, fsSource));
+    shaderProgram = (colour ? initShaderProgram(gl, vsSource, fsTSource) : initShaderProgram(gl, vsSource, fsSource));
 
     // Collect all the info needed to use the shader program.
     // Look up which attributes our shader program is using
@@ -1697,6 +2048,7 @@ function changeShader(gl){
         vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
         vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
         vertexNormal: gl.getAttribLocation(shaderProgram, 'aNormal'),
+        vertexTexture: gl.getAttribLocation(shaderProgram, 'aTexture'),
       },
       uniformLocations: {
         projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
@@ -1706,6 +2058,45 @@ function changeShader(gl){
         sourceDiffuseColor: gl.getUniformLocation(shaderProgram, 'uSourceDiffuseColor'),
         sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
         sourcePosition: gl.getUniformLocation(shaderProgram, 'uSourcePosition'),
+        samplerTexture: gl.getUniformLocation(shaderProgram, 'uSampler'),
       },
     };
+}
+
+// When the web page loads, initialize the texture
+function initTexture(gl){
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                  new Uint8Array([0, 0, 255, 255]));
+    return texture;
+}
+
+// Change crossOrigin parameter
+function requestCORSIfNotSameOrigin(image, image_url) {
+  if ((new URL(image_url)).origin !== window.location.origin) {
+    image.crossOrigin = "";
+  }
+}
+
+// Change the image of texture
+function changeTexture(gl, image_url){
+    var image = new Image();
+    requestCORSIfNotSameOrigin(image, image_url);
+    image.src = image_url;
+    image.addEventListener('load', function(){
+      var texture = gl.createTexture();
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+      // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+      // gl.generateMipmap(gl.TEXTURE_2D);
+      // gl.bindTexture(gl.TEXTURE_2D, null);
+      image.webglTexture=texture;
+  });
 }
