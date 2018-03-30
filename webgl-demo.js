@@ -229,7 +229,7 @@ const fsBSource = `
   uniform float uAlpha;
 
   void main(void) {
-      gl_FragColor = vColor;
+      gl_FragColor = vec4(vColor.rgb, uAlpha);
   }
 `;
 
@@ -1533,25 +1533,23 @@ function playGame() {
     var i = count_shapes - 1, j = count_obstacles - 1;
     while(i >= 0 && j >= 0){
         if(shapes[i].position[2] < obstacles[j].position[2]){
-            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+            shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
             drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
             i--;
         }
         else{
-            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
-            obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+            obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
             drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
             j--;
         }
     }
     while(i >= 0){
-        shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+        shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
         drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
         i--;
     }
     while(j >= 0){
-        obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
-        obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+        obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
         drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
         j--;
     }
@@ -1929,8 +1927,11 @@ function clearScene(gl){
     if(blend){
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_APLHA, gl.ONE);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE);
         // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.ONE, gl.ZERO);
+        // gl.blendFunc(gl.ONE, gl.ONE);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         // gl.blendFunc(gl.ONE, gl.ONE, gl.ONE, gl.ONE);
     }
@@ -2210,8 +2211,8 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[1],
       source_position[2]);
   gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
-  // gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
-  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, 1.0);
+  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
+  // gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, 1.0);
 
   {
     const vertexCount = shape.vertexCount;
