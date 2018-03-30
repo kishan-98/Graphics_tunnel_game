@@ -229,7 +229,7 @@ const fsBSource = `
   uniform float uAlpha;
 
   void main(void) {
-      gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);//vec4(vColor.rgb, vColor.a*uAlpha);
+      gl_FragColor = vColor;
   }
 `;
 
@@ -1618,7 +1618,7 @@ function playGame() {
     }
     else if(!quit){
         frames = 0;
-        shakey_screen(gl, shapes, buffer_shapes, obstacles, buffer_obstacles);
+        requestAnimationFrame(shakey_screen);
     }
   }
   requestAnimationFrame(render);
@@ -1924,7 +1924,7 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
 }
 
 function clearScene(gl){
-    gl.clearColor(0.5, 0.5, 0.5, 0.0);  // Clear to gray, fully opaque
+    gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to gray, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     if(blend){
         gl.disable(gl.DEPTH_TEST);
@@ -2210,7 +2210,8 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[1],
       source_position[2]);
   gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
-  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
+  // gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
+  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, 1.0);
 
   {
     const vertexCount = shape.vertexCount;
