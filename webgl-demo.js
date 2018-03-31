@@ -1532,10 +1532,64 @@ function playGame() {
     const projectionMatrix = clearScene(gl);
     var i = count_shapes - 1, j = count_obstacles - 1;
     while(i >= 0 && j >= 0){
-        if(shapes[i].position[2] < obstacles[j].position[2]){
+        if(k){
+            if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            if(shapes[i].position[2] < obstacles[j].position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+        }
+    }
+    while(i >= 0){
+        if(k){
+            if(shapes[i].position[2] < source_position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
             shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
             drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
             i--;
+        }
+    }
+    while(j >= 0){
+        if(k){
+            if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
         }
         else{
             obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
@@ -1543,17 +1597,10 @@ function playGame() {
             j--;
         }
     }
-    while(i >= 0){
-        shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
-        i--;
+    if(k){
+        drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+        k = 0;
     }
-    while(j >= 0){
-        obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
-        j--;
-    }
-    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && shakey_frames > 0){
         requestAnimationFrame(shakey_screen);
     }
@@ -1585,12 +1632,69 @@ function playGame() {
         toggleTexture = 0;
     }
     const projectionMatrix = clearScene(gl);
-    var i = count_shapes - 1, j = count_obstacles - 1;
+    var i = count_shapes - 1, j = count_obstacles - 1, k = 1;
     while(i >= 0 && j >= 0){
-        if(shapes[i].position[2] < obstacles[j].position[2]){
+        if(k){
+            if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            if(shapes[i].position[2] < obstacles[j].position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+        }
+    }
+    while(i >= 0){
+        if(k){
+            if(shapes[i].position[2] < source_position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
             shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
             drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
             i--;
+        }
+    }
+    while(j >= 0){
+        if(k){
+            if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
         }
         else{
             obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
@@ -1599,18 +1703,10 @@ function playGame() {
             j--;
         }
     }
-    while(i >= 0){
-        shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
-        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
-        i--;
+    if(k){
+        drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+        k = 0;
     }
-    while(j >= 0){
-        obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
-        obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
-        drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
-        j--;
-    }
-    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
     if(!quit && !detect_collision(shapes, obstacles)){
         requestAnimationFrame(render);
     }
