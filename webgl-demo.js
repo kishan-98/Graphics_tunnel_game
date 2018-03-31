@@ -7,8 +7,10 @@ var pause = 0;
 var move = 1;
 var quit = 0;
 var toggleGrayscale = 0; //0 for Grayscale, 1 for Colourfull
-var colour = 0; //0 for original, 1 for shader
-var toggleColour = 0; //0 for keep it as it is, 1 for toggle
+var shader = 0; //0 for original, 1 for shader
+var toggleShader = 0; //0 for keep it as it is, 1 for toggle
+var toggleFlashTiles = 0;
+var flashTilesProb = 5; //one in flashTilesProb tiles will flash
 var texture = 0;
 var toggleTexture = 0;
 var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg',
@@ -24,6 +26,7 @@ var shakey_frames = 120;
 var score = 0;
 var game_over = 0;
 var amplitude = 0.007;
+var frequency = 2;
 var current_rotation = 0;
 
 // Shapes global variables
@@ -43,6 +46,7 @@ var camera_up = [0.0, 1.0, 0.0];
 // Shader global variables
 
 var ambient_factor = 5;
+var intensity_factor = 2.0/3.0;
 var source_diffuse_color = [1.0, 1.0, 1.0];
 var source_ambient_color = [source_diffuse_color[0]/ambient_factor, source_diffuse_color[1]/ambient_factor, source_diffuse_color[2]/ambient_factor];
 var source_specular_color = [1.0, 1.0, 1.0];
@@ -95,6 +99,7 @@ const vsSource = `
   uniform vec3 uSourcePosition;
 
   varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
   varying lowp vec2 vTexture;
@@ -106,6 +111,7 @@ const vsSource = `
   void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
     vColor = aVertexColor;
+    fColor = (vec4(1.0, 1.0, 1.0, 1.0) - aVertexColor)*vec4(1.0, 1.0, 1.0, 0.0);
     vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
     vView = vec3(-uViewMatrix[0][2], -uViewMatrix[1][2], -uViewMatrix[2][2]);
     vTexture = aTexture;
@@ -331,11 +337,233 @@ const fsBTLSource = `
   }
 `;
 
+const fsFSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  void main(void) {
+      gl_FragColor = vColor;
+  }
+`;
+
+// Fragment shader program for lighting
+
+const fsFLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = fColor*vec4(I, 1.0)*vColor + vColor;
+  }
+`;
+
+// Fragment shader program for texture
+
+const fsFTSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      gl_FragColor = fColor*texture2D(uSampler, vTexture) + vColor;
+  }
+`;
+
+// Fragment shader program for lighting and texture
+
+const fsFTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = fColor*vec4(I, 1.0)*vColor*color + vColor;
+  }
+`;
+
+// Fragment shader program for blending
+
+const fsFBSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      gl_FragColor = vec4(vColor.rgb, uAlpha);
+  }
+`;
+
+// Fragment shader program with blending and lighting
+
+const fsFBLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(I, uAlpha)*vColor + vec4(vColor.xyz, 0.0);
+  }
+`;
+
+// Fragment shader program for blending and texture
+
+const fsFBTSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 textureColor = texture2D(uSampler, vTexture);
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(textureColor.rgb, textureColor.a * uAlpha) + vec4(vColor.xyz, 0.0);
+  }
+`;
+
+// Fragment shader program for blending, lighting and texture
+
+const fsFBTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(I, uAlpha)*vColor*color + vec4(vColor.xyz, 0.0);
+  }
+`;
+
 function create_octagon(radius){
     var neg_radius = -radius;
     var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : Math.floor(Math.floor(Math.random() * flashTilesProb + 1.0)/flashTilesProb),
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -528,6 +756,7 @@ function create_octagon0(radius){
     var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : 1,
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -720,6 +949,7 @@ function create_octagon1(radius){
     var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : 0,
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -1622,14 +1852,21 @@ function playGame() {
     refresh_tunnel(gl, shapes, buffer_shapes);
     refresh_obstacles(gl, obstacles, buffer_obstacles);
     handleKeys(shapes, obstacles, light_source);
-    if(toggleColour){
+    if(toggleShader){
         changeShader(gl);
-        toggleColour = 0;
+        toggleShader = 0;
     }
     if(toggleTexture){
         texture = (texture + 1)%total_texture;
         changeTexture(gl, textureObject, textures_urls[texture]);
         toggleTexture = 0;
+    }
+    if(toggleFlashTiles){
+        for(var i = 0; i < count_shapes; i++){
+            if(shapes[i].flashing){
+                reinitColorBuffer(gl, shapes[i], buffer_shapes[i]);
+            }
+        }
     }
     const projectionMatrix = clearScene(gl);
     var i = count_shapes - 1, j = count_obstacles - 1, k = 1;
@@ -1779,22 +2016,42 @@ function handleKeyUp(event){
     }
     else if(event.keyCode == 76){
         // L Key
-        toggleColour = 1;
-        colour ^= 1;
+        toggleShader = 1;
+        shader ^= 1;
+    }
+    else if(event.keyCode == 73){
+        // I Key
+        set_intensity(1/intensity_factor);
+    }
+    else if(event.keyCode == 79){
+        // O Key
+        set_intensity(intensity_factor);
     }
     else if(event.keyCode == 84){
         // T Key
-        toggleColour = 1;
-        colour ^= 2;
+        toggleShader = 1;
+        shader ^= 2;
     }
     else if(event.keyCode == 89){
         // Y Key
-        if(colour&2){
+        if(shader&2){
             toggleTexture = 1;
         }
     }
-    else if(event.keyCode == 74){
-        // J Key
+    else if(event.keyCode == 66){
+        // B Key
+        toggleShader = 1;
+        blend = 1 - blend;
+        shader ^= 4;
+    }
+    else if(event.keyCode == 70){
+        // F Key
+        // toggleShader = 1;
+        toggleFlashTiles = 1 - toggleFlashTiles;
+        // shader ^= 8;
+    }
+    else if(event.keyCode == 32){
+        // Space Key
         for(var i = 0; i < count_shapes; i++){
             shapes[i].rotationZ += Math.PI;
         }
@@ -1806,16 +2063,10 @@ function handleKeyUp(event){
         // G Key
         toggleGrayscale = 1 - toggleGrayscale;
     }
-    else if(event.keyCode == 66){
-        // B Key
-        blend = 1 - blend;
-    }
     else if(48 <= event.keyCode && event.keyCode < 58){
         set_source_color(event.keyCode - 48);
     }
-    else{
-        statusKeys[event.keyCode] = false;
-    }
+    statusKeys[event.keyCode] = false;
 }
 
 function hoverMouse(event){
@@ -1877,15 +2128,6 @@ function handleKeys(shapes, obstacles, light_source){
             source_rotation -= shapes[0].rotation;
             // source_position[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
-        // if(statusKeys[32]){
-        //     // Space Key
-        //     for(var i = 0; i < count_shapes; i++){
-        //         shapes[i].rotationZ += Math.PI;
-        //     }
-        //     for(var i = 0; i < count_obstacles; i++){
-        //         obstacles[i].rotationZ += Math.PI;
-        //     }
-        // }
         if(statusKeys[87]){
             // W Key
             source_position[2] -= shapes[0].speed / speed;
@@ -1920,16 +2162,22 @@ function handleKeys(shapes, obstacles, light_source){
 function set_source_color(key){
     if(0 <= key && key < 8){
         source_diffuse_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
-        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
         source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     else if(key == 8 || key == 9){
         source_diffuse_color = [Math.random(), Math.random(), Math.random()];
-        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
         source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     // console.log(source_diffuse_color);
     // console.log(source_ambient_color);
+}
+
+function set_intensity(factor){
+    source_diffuse_color = [Math.min(source_diffuse_color[0] * factor, 1.0), Math.min(source_diffuse_color[1] * factor, 1.0), Math.min(source_diffuse_color[2] * factor, 1.0)];
+    source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
+    source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
 }
 
 function refresh_tunnel(gl, shapes, buffers){
@@ -2148,6 +2396,32 @@ function initBuffers(gl, shape) {
     normal: normalBuffer,
     texture: textureBuffer,
   };
+}
+
+function reinitColorBuffer(gl, shape, buffer){
+    // Now set up the colors for the faces. We'll use solid colors
+    // for each face.
+
+    const faceColors = shape.faceColors;
+
+    // Convert the array of colors into a table for all the vertices.
+
+    var colors = [];
+
+    for (var j = 0; j < faceColors.length; ++j) {
+      const c = [faceColors[j][0] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][1] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][2] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][3]];
+
+      // Repeat each color numComponentsColor times for the numComponentsColor vertices of the face
+      for (var i = 0; i < shape.numComponentsColor; ++i) {
+          colors = colors.concat(c);
+      }
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.color);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 }
 
 //
@@ -2394,6 +2668,30 @@ function getShader(gl, color){
         case 7:{
             return initShaderProgram(gl, vsSource, fsBTLSource)
         }
+        case 8:{
+            return initShaderProgram(gl, vsSource, fsFSource)
+        }
+        case 9:{
+            return initShaderProgram(gl, vsSource, fsFLSource)
+        }
+        case 10:{
+            return initShaderProgram(gl, vsSource, fsFTSource)
+        }
+        case 11:{
+            return initShaderProgram(gl, vsSource, fsFTLSource)
+        }
+        case 12:{
+            return initShaderProgram(gl, vsSource, fsFBSource)
+        }
+        case 13:{
+            return initShaderProgram(gl, vsSource, fsFBLSource)
+        }
+        case 14:{
+            return initShaderProgram(gl, vsSource, fsFBTSource)
+        }
+        case 15:{
+            return initShaderProgram(gl, vsSource, fsFBTLSource)
+        }
         default:{
             return initShaderProgram(gl, vsSource, fsSource)
         }
@@ -2403,7 +2701,7 @@ function getShader(gl, color){
 function changeShader(gl){
     // Initialize a shader program; this is where all the lighting
     // for the vertices and so forth is established.
-    shaderProgram = getShader(gl, colour);
+    shaderProgram = getShader(gl, shader);
 
     // Collect all the info needed to use the shader program.
     // Look up which attributes our shader program is using

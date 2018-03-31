@@ -12,11 +12,14 @@ Key Console:
     P: Toggle pause
     M: Toggle special pause
     L: Toggle lighting shader
+    I: Increase intensity
+    O: Decrease intensity
     T: Toggle texture shader
     Y: Toggle texture if texture shader is active
-    J: Jump
-    G: Toggle Grayscale
     B: Toggle Blending
+    F: Toggle Flashing tiles
+    Space: Jump
+    G: Toggle Grayscale
     R: Reset Game
     W: Move light source ahead in tunnel
     S: Move light source behind in tunnel
