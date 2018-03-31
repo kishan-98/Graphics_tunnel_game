@@ -1530,7 +1530,7 @@ function playGame() {
     const deltaTime = now - then;
     then = now;
     const projectionMatrix = clearScene(gl);
-    var i = count_shapes - 1, j = count_obstacles - 1;
+    var i = count_shapes - 1, j = count_obstacles - 1, k = 1;
     while(i >= 0 && j >= 0){
         if(k){
             if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
