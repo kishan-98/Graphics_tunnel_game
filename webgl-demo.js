@@ -1,28 +1,41 @@
 // Game global variables
 
 var level = 1;
-var max_level = 2;
-var speed_level = [0, 3, 5];
+var max_level = 5;
+var rotation_speed_level = [1, 1, 2, 3, 5, 8];
+var rotation_player_level = [1, 1, 1.5, 2, 2.75, 3.25];
+var speed_level = [1, 1, 1.5, 2, 2.5, 3];
 var pause = 0;
 var move = 1;
 var quit = 0;
 var toggleGrayscale = 0; //0 for Grayscale, 1 for Colourfull
-var colour = 0; //0 for original, 1 for shader
-var toggleColour = 0; //0 for keep it as it is, 1 for toggle
+var shader = 3;
+var toggleShader = 0; //0 for keep it as it is, 1 for toggle
+var toggleFlashTiles = 1;
+var flashTilesProb = 3; //one in flashTilesProb tiles will flash
 var texture = 0;
 var toggleTexture = 0;
 var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/f-texture.png',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/wall-texture.jpg',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png',];
-var total_texture = textures_urls.length;
+                        './assets/f-texture.png',
+                        './assets/wall-texture.jpg',
+                        './assets/woodenwall.png',
+                        './assets/bricks.png',];
+var textures_frames = Infinity;
+var ghost_textures_urls = [
+                        './assets/ghost4.jpg',
+                        './assets/ghost5.jpg',];
+var ghost_textures_frames = 60 * 2;
+var current_texture = textures_urls;
+var current_frames = textures_frames;
+var total_texture = current_texture.length;
+var blend = 0;
 var frames = 0;
-var level_frames = 1200;
+var level_frames = 60 * 3;
 var shakey_frames = 120;
 var score = 0;
-var game_over = 0;
-var amplitude = 0.007;
+var life = 2;
+var amplitude = 0.05;
+var frequency = 2;
 var current_rotation = 0;
 
 // Shapes global variables
@@ -35,13 +48,16 @@ var count_obstacles = 2;
 var count_type_obstacles = 2;
 
 // Camera global variables
-var camera_position = [0.0, 0.0, 0.0];
+var camera_position = [0.0, -0.5 * radius_object, 0.0];
 var camera_target = [0.0, 0.0, -1.0];
 var camera_up = [0.0, 1.0, 0.0];
+var theta = 0;
+var phi = 0;
 
 // Shader global variables
 
 var ambient_factor = 5;
+var intensity_factor = 2.0/3.0;
 var source_diffuse_color = [1.0, 1.0, 1.0];
 var source_ambient_color = [source_diffuse_color[0]/ambient_factor, source_diffuse_color[1]/ambient_factor, source_diffuse_color[2]/ambient_factor];
 var source_specular_color = [1.0, 1.0, 1.0];
@@ -94,6 +110,7 @@ const vsSource = `
   uniform vec3 uSourcePosition;
 
   varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
   varying lowp vec3 vNormal;
   varying lowp vec3 vView;
   varying lowp vec2 vTexture;
@@ -105,6 +122,7 @@ const vsSource = `
   void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
     vColor = aVertexColor;
+    fColor = (vec4(1.0, 1.0, 1.0, 1.0) - aVertexColor)*vec4(1.0, 1.0, 1.0, 0.0);
     vNormal = vec3(uModelMatrix * vec4(aNormal, 0.0));
     vView = vec3(-uViewMatrix[0][2], -uViewMatrix[1][2], -uViewMatrix[2][2]);
     vTexture = aTexture;
@@ -112,6 +130,17 @@ const vsSource = `
     sDColor = uSourceDiffuseColor;
     sSColor = uSourceSpecularColor;
     sDirection = vec3(uModelMatrix * vec4(aVertexPosition, 1.0)) - uSourcePosition;
+  }
+`;
+
+// Fragment shader program without lighting
+
+const fsSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  void main(void) {
+      gl_FragColor = vColor;
   }
 `;
 
@@ -168,7 +197,7 @@ const fsTSource = `
 
 // Fragment shader program for lighting and texture
 
-const fsLTSource = `
+const fsTLSource = `
   precision lowp float;
   varying lowp vec4 vColor;
   varying lowp vec3 vNormal;
@@ -208,9 +237,118 @@ const fsLTSource = `
   }
 `;
 
-// Fragment shader program without lighting
+// Fragment shader program for blending
 
-const fsSource = `
+const fsBSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      gl_FragColor = vec4(vColor.rgb, uAlpha);
+  }
+`;
+
+// Fragment shader program with blending and lighting
+
+const fsBLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, uAlpha)*vColor;
+  }
+`;
+
+// Fragment shader program for blending and texture
+
+const fsBTSource = `
+  precision lowp float;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 textureColor = texture2D(uSampler, vTexture);
+      gl_FragColor = vec4(textureColor.rgb, textureColor.a * uAlpha);
+  }
+`;
+
+// Fragment shader program for blending, lighting and texture
+
+const fsBTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(I, uAlpha)*vColor*color;
+  }
+`;
+
+const fsFSource = `
   precision lowp float;
   varying lowp vec4 vColor;
 
@@ -219,10 +357,224 @@ const fsSource = `
   }
 `;
 
+// Fragment shader program for lighting
+
+const fsFLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = fColor*vec4(I, 1.0)*vColor + vColor;
+  }
+`;
+
+// Fragment shader program for texture
+
+const fsFTSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      gl_FragColor = fColor*texture2D(uSampler, vTexture) + vColor;
+  }
+`;
+
+// Fragment shader program for lighting and texture
+
+const fsFTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = fColor*vec4(I, 1.0)*vColor*color + vColor;
+  }
+`;
+
+// Fragment shader program for blending
+
+const fsFBSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      gl_FragColor = vec4(vColor.rgb, uAlpha);
+  }
+`;
+
+// Fragment shader program with blending and lighting
+
+const fsFBLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+
+  uniform float uAlpha;
+
+  void main(void) {
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(I, uAlpha)*vColor + vec4(vColor.xyz, 0.0);
+  }
+`;
+
+// Fragment shader program for blending and texture
+
+const fsFBTSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 textureColor = texture2D(uSampler, vTexture);
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(textureColor.rgb, textureColor.a * uAlpha) + vec4(vColor.xyz, 0.0);
+  }
+`;
+
+// Fragment shader program for blending, lighting and texture
+
+const fsFBTLSource = `
+  precision lowp float;
+  varying lowp vec4 vColor;
+  varying lowp vec4 fColor;
+  varying lowp vec3 vNormal;
+  varying lowp vec3 vView;
+  varying lowp vec3 sAColor;
+  varying lowp vec3 sDColor;
+  varying lowp vec3 sSColor;
+  varying lowp vec3 sDirection;
+  varying lowp vec2 vTexture;
+
+  uniform sampler2D uSampler;
+  uniform float uAlpha;
+
+  void main(void) {
+      vec4 color = texture2D(uSampler, vTexture);
+      vec3 source_ambient_color = sAColor;
+      vec3 source_diffuse_color = sDColor;
+      vec3 source_specular_color = sSColor;
+
+      vec3 mat_ambient_color = vec3(vColor.x/5.0, vColor.y/5.0, vColor.z/5.0);
+      vec3 mat_diffuse_color = vColor.xyz;
+      vec3 mat_specular_color = vColor.xyz;
+      float mat_shininess = 5000.0;
+
+      vec3 I_ambient = source_ambient_color * mat_ambient_color;
+      vec3 I_diffuse = source_diffuse_color * mat_diffuse_color * max(0.0, -(dot(vNormal, sDirection)/(length(vNormal)*length(sDirection))));
+      vec3 R = normalize(reflect(sDirection, normalize(vNormal)));
+      vec3 V = normalize(vView);
+      vec3 I_specular = source_specular_color * mat_specular_color * pow(max(-dot(R,V), 0.0), mat_shininess);
+      // vec3 I = I_ambient;
+      // vec3 I = I_diffuse;
+      // vec3 I = I_specular;
+      // vec3 I = I_ambient + I_diffuse;
+      // vec3 I = I_ambient + I_specular;
+      // vec3 I = I_diffuse + I_specular;
+      vec3 I = I_ambient + I_diffuse + I_specular;
+      gl_FragColor = vec4(fColor.xyz, 1.0)*vec4(I, uAlpha)*vColor*color + vec4(vColor.xyz, 0.0);
+  }
+`;
+
 function create_octagon(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : Math.floor(Math.floor(Math.random() * flashTilesProb + 1.0)/flashTilesProb),
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -322,6 +674,8 @@ function create_octagon(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
         [Math.random(),  Math.random(),  Math.random(),  1.0],    // Right face: random
@@ -410,8 +764,10 @@ function create_octagon(radius){
 
 function create_octagon0(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : 1,
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -511,6 +867,8 @@ function create_octagon0(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       [1.0,  1.0,  1.0,  1.0],    // Right face: white
@@ -599,8 +957,10 @@ function create_octagon0(radius){
 
 function create_octagon1(radius){
     var neg_radius = -radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0, 0, 0],
     'radius' : 1/Math.cos(Math.PI/8),
+    'flashing' : 0,
     'positions' : [
       // Right face
       radius, radius*Math.tan(Math.PI/8), radius,
@@ -701,6 +1061,8 @@ function create_octagon1(radius){
       radius*Math.cos(Math.PI + 7*Math.PI/4), radius*Math.sin(Math.PI + 7*Math.PI/4), 0,
     ],
 
+    'alpha' : blendAlpha,
+
     'faceColors' : [
       [0.0,  0.0,  0.0,  1.0],    // Right face: white
       [1.0,  1.0,  1.0,  1.0],    // Top Right face: black
@@ -787,10 +1149,17 @@ function create_octagon1(radius){
 }
 
 function create_cuboid(radius){
-    var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/50;
+    var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
+    var blendAlpha = 0.1;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
       // Right face
       len, height, wid,
       len, height, -wid,
@@ -820,15 +1189,15 @@ function create_cuboid(radius){
       len, height, wid,
       len, -height, wid,
       -len, -height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      len, -height, -wid,
-      -len, -height, -wid,
     ],
 
     'normals' : [
+      // Back face
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+
       // Right face
       radius, 0, 0,
       radius, 0, 0,
@@ -858,24 +1227,26 @@ function create_cuboid(radius){
       0, 0, radius,
       0, 0, radius,
       0, 0, radius,
-
-      // Back face
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
     ],
 
+    'alpha' : blendAlpha,
+
     'faceColors' : [
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Bottom face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
     'textures' : [
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -901,12 +1272,6 @@ function create_cuboid(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -914,12 +1279,12 @@ function create_cuboid(radius){
     ],
 
     'indices' : [
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // bottom
-      16, 17, 18,     16, 18, 19,   // front
-      20, 21, 22,     20, 22, 23,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // bottom
+      20, 21, 22,     20, 22, 23,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -931,15 +1296,22 @@ function create_cuboid(radius){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7*radius,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (rotation_speed_level[level] + 1)),}
 }
 
 function create_2triangles(radius){
-    var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/50;
+    var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
+    var blendAlpha = 0.1;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Top triangle
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      0, 0, -wid,
+      len, height, -wid,
+
       // Right face
       0, 0, wid,
       0, 0, -wid,
@@ -963,14 +1335,14 @@ function create_2triangles(radius){
       len, height, wid,
       0, 0, wid,
       len, height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      0, 0, -wid,
-      len, height, -wid,
 
       // Bottom triangle
+      // Back face
+      -len, -height, -wid,
+      len, -height, -wid,
+      0, 0, -wid,
+      len, -height, -wid,
+
       // Right face
       0, 0, wid,
       0, 0, -wid,
@@ -994,16 +1366,16 @@ function create_2triangles(radius){
       len, -height, wid,
       0, 0, wid,
       len, -height, wid,
-
-      // Back face
-      -len, -height, -wid,
-      len, -height, -wid,
-      0, 0, -wid,
-      len, -height, -wid,
     ],
 
     'normals' : [
       // Top triangle
+      // Back face
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+
       // Right face
       Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
       Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
@@ -1028,13 +1400,13 @@ function create_2triangles(radius){
       0, 0, 1,
       0, 0, 1,
 
+      // Bottom triangle
       // Back face
       0, 0, -1,
       0, 0, -1,
       0, 0, -1,
       0, 0, -1,
 
-      // Bottom triangle
       // Right face
       Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
       Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
@@ -1058,31 +1430,33 @@ function create_2triangles(radius){
       0, 0, 1,
       0, 0, 1,
       0, 0, 1,
-
-      // Back face
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
     ],
+
+    'alpha' : blendAlpha,
 
     'faceColors' : [
       // Top triangle
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       // Bottom triangle
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
     'textures' : [
       // Top triangle
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1102,18 +1476,18 @@ function create_2triangles(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
       1, 0,
 
       // Bottom triangle
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1133,12 +1507,6 @@ function create_2triangles(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -1147,17 +1515,17 @@ function create_2triangles(radius){
 
     'indices' : [
       // Top triangle
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // front
-      16, 17, 18,     16, 18, 19,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // front
       // Bottom triangle
-      20, 21, 22,     20, 22, 23,   // right
-      24, 25, 26,     24, 26, 27,    // left
-      28, 29, 30,     28, 30, 31,   // top
-      32, 33, 34,     32, 34, 35,   // front
-      36, 37, 38,     36, 38, 39,   // back
+      20, 21, 22,     20, 22, 23,   // back
+      24, 25, 26,     24, 26, 27,   // right
+      28, 29, 30,     28, 30, 31,   // left
+      32, 33, 34,     32, 34, 35,   // top
+      36, 37, 38,     36, 38, 39,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -1169,13 +1537,20 @@ function create_2triangles(radius){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7*radius,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (rotation_speed_level[level] + 1)),}
 }
 
 function create_light_source(radius){
     var len = radius, height = radius, wid = radius;
+    var blendAlpha = 1.0;
     return {'position'  : [0.0, 0.5*radius_object, -2*radius_object],
     'positions' : [
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
       // Right face
       len, height, wid,
       len, height, -wid,
@@ -1205,15 +1580,15 @@ function create_light_source(radius){
       len, height, wid,
       len, -height, wid,
       -len, -height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      len, -height, -wid,
-      -len, -height, -wid,
     ],
 
     'normals' : [
+      // Back face
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+
       // Right face
       radius, 0, 0,
       radius, 0, 0,
@@ -1243,24 +1618,26 @@ function create_light_source(radius){
       0, 0, radius,
       0, 0, radius,
       0, 0, radius,
-
-      // Back face
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
     ],
 
+    'alpha' : blendAlpha,
+
     'faceColors' : [
+      [1.0,  1.0,  1.0,  1.0],    // Back face: white
       [1.0,  1.0,  1.0,  1.0],    // Right face: white
       [1.0,  1.0,  1.0,  1.0],    // Left face: white
       [1.0,  1.0,  1.0,  1.0],    // Top face: white
       [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
       [1.0,  1.0,  1.0,  1.0],    // Front face: white
-      [1.0,  1.0,  1.0,  1.0],    // Back face: white
     ],
 
     'textures' : [
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1286,12 +1663,6 @@ function create_light_source(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -1299,12 +1670,12 @@ function create_light_source(radius){
     ],
 
     'indices' : [
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // bottom
-      16, 17, 18,     16, 18, 19,   // front
-      20, 21, 22,     20, 22, 23,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // bottom
+      20, 21, 22,     20, 22, 23,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -1400,15 +1771,77 @@ function playGame() {
     const deltaTime = now - then;
     then = now;
     const projectionMatrix = clearScene(gl);
-    for (var i = 0; i < count_shapes; i++){
-        shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+    var i = count_shapes - 1, j = count_obstacles - 1, k = 1;
+    while(i >= 0 && j >= 0){
+        if(k){
+            if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            if(shapes[i].position[2] < obstacles[j].position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+        }
     }
-    for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
-        drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
+    while(i >= 0){
+        if(k){
+            if(shapes[i].position[2] < source_position[2]){
+                shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            shapes[i].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+            drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+            i--;
+        }
     }
-    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+    while(j >= 0){
+        if(k){
+            if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            obstacles[j].position[0] = amplitude * Math.sin(2 * Math.PI * frames / 4);
+            drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+            j--;
+        }
+    }
+    if(k){
+        drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+        k = 0;
+    }
     if(!quit && shakey_frames > 0){
         requestAnimationFrame(shakey_screen);
     }
@@ -1423,6 +1856,10 @@ function playGame() {
     if(frames % level_frames == 0){
         level = Math.min(level + 1, max_level);
     }
+    if(frames % current_frames == 0){
+        texture = (texture + 1)%total_texture;
+        changeTexture(gl, textureObject, current_texture[texture]);
+    }
     print_data(deltaTime);
     // console.log("deltaTime");
     // console.log(deltaTime);
@@ -1430,32 +1867,122 @@ function playGame() {
     refresh_tunnel(gl, shapes, buffer_shapes);
     refresh_obstacles(gl, obstacles, buffer_obstacles);
     handleKeys(shapes, obstacles, light_source);
-    if(toggleColour){
+    if(toggleShader){
         changeShader(gl);
-        toggleColour = 0;
+        toggleShader = 0;
     }
     if(toggleTexture){
         texture = (texture + 1)%total_texture;
-        changeTexture(gl, textureObject, textures_urls[texture]);
+        changeTexture(gl, textureObject, current_texture[texture]);
         toggleTexture = 0;
     }
+    if(toggleFlashTiles){
+        for(var i = 0; i < count_shapes; i++){
+            if(shapes[i].flashing){
+                reinitColorBuffer(gl, shapes[i], buffer_shapes[i]);
+            }
+        }
+    }
     const projectionMatrix = clearScene(gl);
-    for (var i = 0; i < count_shapes; i++){
-        shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
-        drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+    var i = count_shapes - 1, j = count_obstacles - 1, k = 1;
+    while(i >= 0 && j >= 0){
+        if(k){
+            if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            if(shapes[i].position[2] < obstacles[j].position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+        }
     }
-    for (var i = 0; i < count_obstacles; i++){
-        obstacles[i].position[2] += move * (1 - pause) * obstacles[i].speed * deltaTime;
-        obstacles[i].rotationZ += (1 - pause) * obstacles[i].rotation * deltaTime;
-        drawScene(gl, projectionMatrix, obstacles[i], programInfo, buffer_obstacles[i], deltaTime);
+    while(i >= 0){
+        if(k){
+            if(shapes[i].position[2] < source_position[2]){
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
+                drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+                i--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
+            drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
+            i--;
+        }
     }
-    drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+    while(j >= 0){
+        if(k){
+            if(obstacles[j].position[2] < source_position[2]){
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
+                obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+                drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+                j--;
+            }
+            else{
+                drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+                k = 0;
+            }
+        }
+        else{
+            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
+            obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
+            drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
+            j--;
+        }
+    }
+    if(k){
+        drawScene(gl, projectionMatrix, light_source, programInfo, buffer_light_source, deltaTime);
+        k = 0;
+    }
     if(!quit && !detect_collision(shapes, obstacles)){
         requestAnimationFrame(render);
     }
     else if(!quit){
-        frames = 0;
-        shakey_screen(gl, shapes, buffer_shapes, obstacles, buffer_obstacles);
+        life--;
+        obstacles.shift();
+        buffer_obstacles.shift();
+        count_obstacles--;
+        if(life > 0){
+            // Reduce life line and enter ghost mode
+            requestAnimationFrame(render);
+            toggleShader = 1;
+            blend = 1;
+            shader ^= 4;
+            current_texture = ghost_textures_urls;
+            current_frames = ghost_textures_frames;
+            total_texture = current_texture.length;
+            texture = 0;
+            changeTexture(gl, textureObject, current_texture[texture]);
+        }
+        else{
+            frames = 0;
+            requestAnimationFrame(shakey_screen);
+        }
     }
   }
   requestAnimationFrame(render);
@@ -1482,20 +2009,18 @@ function print_data(deltaTime){
 }
 
 function detect_collision(shapes, obstacles){
-    for (var i = 0; i < count_obstacles; i++){
-        if(obstacles[i].position[2] > -0.5*radius_object){
-            var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / Math.PI) * Math.PI;
-            var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
-            if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
-                return true;
-            }
-            // theta = theta*180/Math.PI;
-            // alpha = alpha*180/Math.PI;
-            // var element = document.getElementById("alpha");
-            // element.innerHTML = "alpha: " + alpha.toString();
-            // element = document.getElementById("theta");
-            // element.innerHTML = "theta: " + theta.toString();
+    if(obstacles.length > 0 && 0 > obstacles[0].position[2] && obstacles[0].position[2] > -0.5*radius_object){
+        var theta = obstacles[0].rotationZ - Math.floor(obstacles[0].rotationZ / Math.PI) * Math.PI;
+        var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
+        if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
+            return true;
         }
+        // theta = theta*180/Math.PI;
+        // alpha = alpha*180/Math.PI;
+        // var element = document.getElementById("alpha");
+        // element.innerHTML = "alpha: " + alpha.toString();
+        // element = document.getElementById("theta");
+        // element.innerHTML = "theta: " + theta.toString();
     }
     return false;
 }
@@ -1508,8 +2033,8 @@ function handleKeyDown(event){
 }
 
 function handleKeyUp(event){
-    if(event.keyCode == 81){
-        // Q Key
+    if(event.keyCode == 27){
+        // Escape Key
         quit = 1;
     }
     else if(event.keyCode == 80){
@@ -1522,22 +2047,42 @@ function handleKeyUp(event){
     }
     else if(event.keyCode == 76){
         // L Key
-        toggleColour = 1;
-        colour ^= 1;
+        toggleShader = 1;
+        shader ^= 1;
+    }
+    else if(event.keyCode == 73){
+        // I Key
+        set_intensity(1/intensity_factor);
+    }
+    else if(event.keyCode == 79){
+        // O Key
+        set_intensity(intensity_factor);
     }
     else if(event.keyCode == 84){
         // T Key
-        toggleColour = 1;
-        colour ^= 2;
+        toggleShader = 1;
+        shader ^= 2;
     }
     else if(event.keyCode == 89){
         // Y Key
-        if(colour&2){
+        if(shader&2){
             toggleTexture = 1;
         }
     }
-    else if(event.keyCode == 74){
-        // J Key
+    else if(event.keyCode == 66){
+        // B Key
+        toggleShader = 1;
+        blend = 1 - blend;
+        shader ^= 4;
+    }
+    else if(event.keyCode == 70){
+        // F Key
+        // toggleShader = 1;
+        toggleFlashTiles = 1 - toggleFlashTiles;
+        // shader ^= 8;
+    }
+    else if(event.keyCode == 32){
+        // Space Key
         for(var i = 0; i < count_shapes; i++){
             shapes[i].rotationZ += Math.PI;
         }
@@ -1552,9 +2097,7 @@ function handleKeyUp(event){
     else if(48 <= event.keyCode && event.keyCode < 58){
         set_source_color(event.keyCode - 48);
     }
-    else{
-        statusKeys[event.keyCode] = false;
-    }
+    statusKeys[event.keyCode] = false;
 }
 
 function hoverMouse(event){
@@ -1563,14 +2106,14 @@ function hoverMouse(event){
     var this_X = Math.min(Math.max(event.clientX, 60), 700);
     var this_Y = Math.min(Math.max(event.clientY, 23), 503);
     var curr_X = (this_X - 60.0)/640.0;
-    var theta = (1.5 - 2*curr_X) * Math.PI;
+    theta = (1.5 - 2*curr_X) * Math.PI;
     var curr_Y = (this_Y - 23.0)/480.0;
-    var phi = (0.5 - curr_Y) * Math.PI;
+    phi = (0.5 - curr_Y) * Math.PI;
     // var element = document.getElementById("theta");
     // element.innerHTML = "theta: " + theta.toString();
     // element = document.getElementById("phi");
     // element.innerHTML = "phi: " + phi.toString();
-    camera_target = [Math.cos(theta) * Math.cos(phi), Math.sin(phi), -Math.sin(theta) * Math.cos(phi)];
+    camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
     camera_up = [0, Math.cos(phi), Math.sin(phi)];
 }
 
@@ -1616,15 +2159,20 @@ function handleKeys(shapes, obstacles, light_source){
             source_rotation -= shapes[0].rotation;
             // source_position[1] = 0.5*radius_object*Math.cos(source_rotation);
         }
-        // if(statusKeys[32]){
-        //     // Space Key
-        //     for(var i = 0; i < count_shapes; i++){
-        //         shapes[i].rotationZ += Math.PI;
-        //     }
-        //     for(var i = 0; i < count_obstacles; i++){
-        //         obstacles[i].rotationZ += Math.PI;
-        //     }
-        // }
+        if(statusKeys[90]){
+            // Z Key
+            camera_position[1] += light_source.speed / speed * 3;
+            camera_position[1] = Math.min(camera_position[1], 0.9 * radius_object);
+            camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
+            camera_up = [0, Math.cos(phi), Math.sin(phi)];
+        }
+        if(statusKeys[88]){
+            // X Key
+            camera_position[1] -= light_source.speed / speed * 3;
+            camera_position[1] = Math.max(camera_position[1], -0.9 * radius_object);
+            camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
+            camera_up = [0, Math.cos(phi), Math.sin(phi)];
+        }
         if(statusKeys[87]){
             // W Key
             source_position[2] -= shapes[0].speed / speed;
@@ -1653,22 +2201,84 @@ function handleKeys(shapes, obstacles, light_source){
             // console.log(light_source.position);
             // console.log(source_position);
         }
+        if(statusKeys[65]){
+            // A Key
+            source_position[0] -= light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0.0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("w key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[68]){
+            // D Key
+            source_position[0] += light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("s key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[81]){
+            // Q Key
+            source_position[1] += light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0.0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("w key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[69]){
+            // E Key
+            source_position[1] -= light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("s key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
     }
 }
 
 function set_source_color(key){
     if(0 <= key && key < 8){
         source_diffuse_color = [(key&4)*0.25, (key&2)*0.5, (key&1)*1.0];
-        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
         source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     else if(key == 8 || key == 9){
         source_diffuse_color = [Math.random(), Math.random(), Math.random()];
-        source_ambient_color = [source_diffuse_color[0] / ambient_factor, source_diffuse_color[1] / ambient_factor, source_diffuse_color[2] / ambient_factor];
+        source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
         source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
     }
     // console.log(source_diffuse_color);
     // console.log(source_ambient_color);
+}
+
+function set_intensity(factor){
+    source_diffuse_color = [Math.min(source_diffuse_color[0] * factor, 1.0), Math.min(source_diffuse_color[1] * factor, 1.0), Math.min(source_diffuse_color[2] * factor, 1.0)];
+    source_ambient_color = [Math.max(source_diffuse_color[0] / ambient_factor, 0.1), Math.max(source_diffuse_color[1] / ambient_factor, 0.1), Math.max(source_diffuse_color[2] / ambient_factor, 0.1)];
+    source_specular_color = [source_diffuse_color[0], source_diffuse_color[1], source_diffuse_color[2]];
 }
 
 function refresh_tunnel(gl, shapes, buffers){
@@ -1759,9 +2369,22 @@ function refresh_obstacles(gl, obstacles, buffer_obstacles){
 function clearScene(gl){
     gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to gray, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
-    gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-    gl.depthFunc(gl.LESS);            // Near things obscure far things
-
+    if(blend){
+        gl.disable(gl.DEPTH_TEST);
+        gl.enable(gl.BLEND);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.ONE, gl.ZERO);
+        // gl.blendFunc(gl.ONE, gl.ONE);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.SRC_APLHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        // gl.blendFunc(gl.ONE, gl.ONE, gl.ONE, gl.ONE);
+    }
+    else{
+        gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+        gl.disable(gl.BLEND);
+        gl.depthFunc(gl.LESS);            // Near things obscure far things
+    }
     // Clear the canvas before we start drawing on it.
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1874,6 +2497,32 @@ function initBuffers(gl, shape) {
     normal: normalBuffer,
     texture: textureBuffer,
   };
+}
+
+function reinitColorBuffer(gl, shape, buffer){
+    // Now set up the colors for the faces. We'll use solid colors
+    // for each face.
+
+    const faceColors = shape.faceColors;
+
+    // Convert the array of colors into a table for all the vertices.
+
+    var colors = [];
+
+    for (var j = 0; j < faceColors.length; ++j) {
+      const c = [faceColors[j][0] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][1] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][2] * Math.abs(Math.cos(2 * Math.PI * frames / (2 * frequency * speed))),
+                 faceColors[j][3]];
+
+      // Repeat each color numComponentsColor times for the numComponentsColor vertices of the face
+      for (var i = 0; i < shape.numComponentsColor; ++i) {
+          colors = colors.concat(c);
+      }
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.color);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 }
 
 //
@@ -2033,6 +2682,8 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[1],
       source_position[2]);
   gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
+  gl.uniform1f(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
+  // gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, 1.0);
 
   {
     const vertexCount = shape.vertexCount;
@@ -2104,7 +2755,43 @@ function getShader(gl, color){
             return initShaderProgram(gl, vsSource, fsTSource)
         }
         case 3:{
-            return initShaderProgram(gl, vsSource, fsLTSource)
+            return initShaderProgram(gl, vsSource, fsTLSource)
+        }
+        case 4:{
+            return initShaderProgram(gl, vsSource, fsBSource)
+        }
+        case 5:{
+            return initShaderProgram(gl, vsSource, fsBLSource)
+        }
+        case 6:{
+            return initShaderProgram(gl, vsSource, fsBTSource)
+        }
+        case 7:{
+            return initShaderProgram(gl, vsSource, fsBTLSource)
+        }
+        case 8:{
+            return initShaderProgram(gl, vsSource, fsFSource)
+        }
+        case 9:{
+            return initShaderProgram(gl, vsSource, fsFLSource)
+        }
+        case 10:{
+            return initShaderProgram(gl, vsSource, fsFTSource)
+        }
+        case 11:{
+            return initShaderProgram(gl, vsSource, fsFTLSource)
+        }
+        case 12:{
+            return initShaderProgram(gl, vsSource, fsFBSource)
+        }
+        case 13:{
+            return initShaderProgram(gl, vsSource, fsFBLSource)
+        }
+        case 14:{
+            return initShaderProgram(gl, vsSource, fsFBTSource)
+        }
+        case 15:{
+            return initShaderProgram(gl, vsSource, fsFBTLSource)
         }
         default:{
             return initShaderProgram(gl, vsSource, fsSource)
@@ -2115,7 +2802,7 @@ function getShader(gl, color){
 function changeShader(gl){
     // Initialize a shader program; this is where all the lighting
     // for the vertices and so forth is established.
-    shaderProgram = getShader(gl, colour);
+    shaderProgram = getShader(gl, shader);
 
     // Collect all the info needed to use the shader program.
     // Look up which attributes our shader program is using
@@ -2138,6 +2825,7 @@ function changeShader(gl){
         sourceSpecularColor: gl.getUniformLocation(shaderProgram, 'uSourceSpecularColor'),
         sourcePosition: gl.getUniformLocation(shaderProgram, 'uSourcePosition'),
         samplerTexture: gl.getUniformLocation(shaderProgram, 'uSampler'),
+        fragmentAlpha: gl.getUniformLocation(shaderProgram, 'uAlpha'),
       },
     };
 }
@@ -2161,7 +2849,7 @@ function requestCORSIfNotSameOrigin(image, image_url) {
 // Change the image of texture
 function changeTexture(gl, texture, image_url){
     var image = new Image();
-    requestCORSIfNotSameOrigin(image, image_url);
+    // requestCORSIfNotSameOrigin(image, image_url);
     image.src = image_url;
     image.addEventListener('load', function(){
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
