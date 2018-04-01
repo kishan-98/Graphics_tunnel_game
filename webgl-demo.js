@@ -1149,7 +1149,7 @@ function create_octagon1(radius){
 function create_cuboid(radius){
     var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    var blendAlpha = 0.2;
+    var blendAlpha = 0.1;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Back face
@@ -1300,7 +1300,7 @@ function create_cuboid(radius){
 function create_2triangles(radius){
     var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    var blendAlpha = 0.2;
+    var blendAlpha = 0.1;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Top triangle
@@ -2174,6 +2174,34 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[83]){
             // S Key
             source_position[2] += shapes[0].speed / speed;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("s key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[65]){
+            // A Key
+            source_position[0] -= light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0.0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("w key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[68]){
+            // D Key
+            source_position[0] += light_source.speed / speed * 3;
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;
