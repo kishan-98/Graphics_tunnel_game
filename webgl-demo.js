@@ -48,9 +48,11 @@ var count_obstacles = 2;
 var count_type_obstacles = 2;
 
 // Camera global variables
-var camera_position = [0.0, 0.0, 0.0];
+var camera_position = [0.0, -0.5 * radius_object, 0.0];
 var camera_target = [0.0, 0.0, -1.0];
 var camera_up = [0.0, 1.0, 0.0];
+var theta = 0;
+var phi = 0;
 
 // Shader global variables
 
@@ -2031,8 +2033,8 @@ function handleKeyDown(event){
 }
 
 function handleKeyUp(event){
-    if(event.keyCode == 81){
-        // Q Key
+    if(event.keyCode == 27){
+        // Escape Key
         quit = 1;
     }
     else if(event.keyCode == 80){
@@ -2104,14 +2106,14 @@ function hoverMouse(event){
     var this_X = Math.min(Math.max(event.clientX, 60), 700);
     var this_Y = Math.min(Math.max(event.clientY, 23), 503);
     var curr_X = (this_X - 60.0)/640.0;
-    var theta = (1.5 - 2*curr_X) * Math.PI;
+    theta = (1.5 - 2*curr_X) * Math.PI;
     var curr_Y = (this_Y - 23.0)/480.0;
-    var phi = (0.5 - curr_Y) * Math.PI;
+    phi = (0.5 - curr_Y) * Math.PI;
     // var element = document.getElementById("theta");
     // element.innerHTML = "theta: " + theta.toString();
     // element = document.getElementById("phi");
     // element.innerHTML = "phi: " + phi.toString();
-    camera_target = [Math.cos(theta) * Math.cos(phi), Math.sin(phi), -Math.sin(theta) * Math.cos(phi)];
+    camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
     camera_up = [0, Math.cos(phi), Math.sin(phi)];
 }
 
@@ -2156,6 +2158,20 @@ function handleKeys(shapes, obstacles, light_source){
             }
             source_rotation -= shapes[0].rotation;
             // source_position[1] = 0.5*radius_object*Math.cos(source_rotation);
+        }
+        if(statusKeys[90]){
+            // Z Key
+            camera_position[1] += light_source.speed / speed * 3;
+            camera_position[1] = Math.min(camera_position[1], 0.9 * radius_object);
+            camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
+            camera_up = [0, Math.cos(phi), Math.sin(phi)];
+        }
+        if(statusKeys[88]){
+            // X Key
+            camera_position[1] -= light_source.speed / speed * 3;
+            camera_position[1] = Math.max(camera_position[1], -0.9 * radius_object);
+            camera_target = [Math.cos(theta) * Math.cos(phi) + camera_position[0], Math.sin(phi) + camera_position[1], -Math.sin(theta) * Math.cos(phi) + camera_position[2]];
+            camera_up = [0, Math.cos(phi), Math.sin(phi)];
         }
         if(statusKeys[87]){
             // W Key
@@ -2202,6 +2218,34 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[68]){
             // D Key
             source_position[0] += light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("s key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[81]){
+            // Q Key
+            source_position[1] += light_source.speed / speed * 3;
+            light_source.position = [source_position[0], source_position[1], source_position[2]];
+            if(source_position[2] < 0.0){
+                light_source.position[2] = source_position[2] - 1.0*radius_object;
+            }
+            else if(source_position[2] > 0){
+                light_source.position[2] = source_position[2] + 1.0*radius_object;
+            }
+            // console.log("w key press");
+            // console.log(light_source.position);
+            // console.log(source_position);
+        }
+        if(statusKeys[69]){
+            // E Key
+            source_position[1] -= light_source.speed / speed * 3;
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;
