@@ -24,7 +24,7 @@ var textures_frames = Infinity;
 var ghost_textures_urls = [
                         './assets/ghost4.jpg',
                         './assets/ghost5.jpg',];
-var ghost_textures_frames = 60 * 2;
+var ghost_textures_frames = 60 * 5;
 var current_texture = textures_urls;
 var current_frames = textures_frames;
 var total_texture = current_texture.length;
