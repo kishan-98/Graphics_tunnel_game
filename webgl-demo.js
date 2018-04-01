@@ -16,11 +16,18 @@ var flashTilesProb = 3; //one in flashTilesProb tiles will flash
 var texture = 0;
 var toggleTexture = 0;
 var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/f-texture.png',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/wall-texture.jpg',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/woodenwall.png',
-                        'file:///Users/kishan/Documents/B.Tech@IIITH/22/Graphics/Tutorials/webgl_tutorial/assets/bricks.png',];
-var total_texture = textures_urls.length;
+                        './assets/f-texture.png',
+                        './assets/wall-texture.jpg',
+                        './assets/woodenwall.png',
+                        './assets/bricks.png',];
+var textures_frames = Infinity;
+var ghost_textures_urls = [
+                        './assets/ghost4.jpg',
+                        './assets/ghost5.jpg',];
+var ghost_textures_frames = 60 * 2;
+var current_texture = textures_urls;
+var current_frames = textures_frames;
+var total_texture = current_texture.length;
 var blend = 0;
 var frames = 0;
 var level_frames = 60 * 3;
@@ -1140,7 +1147,7 @@ function create_octagon1(radius){
 }
 
 function create_cuboid(radius){
-    var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/50;
+    var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
     var blendAlpha = 0.2;
     return {'position'  : [0, 0, -20*radius],
@@ -1291,7 +1298,7 @@ function create_cuboid(radius){
 }
 
 function create_2triangles(radius){
-    var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/50;
+    var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/5;
     var type = Math.floor(Math.random()*2)*2 - 1;
     var blendAlpha = 0.2;
     return {'position'  : [0, 0, -20*radius],
@@ -1847,6 +1854,10 @@ function playGame() {
     if(frames % level_frames == 0){
         level = Math.min(level + 1, max_level);
     }
+    if(frames % current_frames == 0){
+        texture = (texture + 1)%total_texture;
+        changeTexture(gl, textureObject, current_texture[texture]);
+    }
     print_data(deltaTime);
     // console.log("deltaTime");
     // console.log(deltaTime);
@@ -1860,7 +1871,7 @@ function playGame() {
     }
     if(toggleTexture){
         texture = (texture + 1)%total_texture;
-        changeTexture(gl, textureObject, textures_urls[texture]);
+        changeTexture(gl, textureObject, current_texture[texture]);
         toggleTexture = 0;
     }
     if(toggleFlashTiles){
@@ -1955,10 +1966,16 @@ function playGame() {
         buffer_obstacles.shift();
         count_obstacles--;
         if(life > 0){
+            // Reduce life line and enter ghost mode
             requestAnimationFrame(render);
             toggleShader = 1;
             blend = 1;
             shader ^= 4;
+            current_texture = ghost_textures_urls;
+            current_frames = ghost_textures_frames;
+            total_texture = current_texture.length;
+            texture = 0;
+            changeTexture(gl, textureObject, current_texture[texture]);
         }
         else{
             frames = 0;
@@ -2760,7 +2777,7 @@ function requestCORSIfNotSameOrigin(image, image_url) {
 // Change the image of texture
 function changeTexture(gl, texture, image_url){
     var image = new Image();
-    requestCORSIfNotSameOrigin(image, image_url);
+    // requestCORSIfNotSameOrigin(image, image_url);
     image.src = image_url;
     image.addEventListener('load', function(){
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
