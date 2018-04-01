@@ -1,8 +1,10 @@
 // Game global variables
 
 var level = 1;
-var max_level = 2;
-var speed_level = [0, 3, 5];
+var max_level = 5;
+var rotation_speed_level = [1, 1, 2, 3, 5, 8];
+var rotation_player_level = [1, 1, 1.5, 2, 2.75, 3.25];
+var speed_level = [1, 1, 1.5, 2, 2.5, 3];
 var pause = 0;
 var move = 1;
 var quit = 0;
@@ -21,7 +23,7 @@ var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef3
 var total_texture = textures_urls.length;
 var blend = 0;
 var frames = 0;
-var level_frames = 1200;
+var level_frames = 60 * 3;
 var shakey_frames = 120;
 var score = 0;
 var life = 2;
@@ -1285,7 +1287,7 @@ function create_cuboid(radius){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7*radius,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (rotation_speed_level[level] + 1)),}
 }
 
 function create_2triangles(radius){
@@ -1526,7 +1528,7 @@ function create_2triangles(radius){
     'rotationY' : 0,
     'rotationZ' : 0,
     'speed'     : 7*radius,
-    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (speed_level[level] + 1)),}
+    'rotation'  : type * Math.PI / 2.5 * Math.floor(Math.random() * (rotation_speed_level[level] + 1)),}
 }
 
 function create_light_source(radius){
@@ -1873,12 +1875,12 @@ function playGame() {
     while(i >= 0 && j >= 0){
         if(k){
             if(shapes[i].position[2] < obstacles[j].position[2] && shapes[i].position[2] < source_position[2]){
-                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
                 drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
                 i--;
             }
             else if(obstacles[j].position[2] < source_position[2]){
-                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
                 obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
                 drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
                 j--;
@@ -1890,12 +1892,12 @@ function playGame() {
         }
         else{
             if(shapes[i].position[2] < obstacles[j].position[2]){
-                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
                 drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
                 i--;
             }
             else{
-                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
                 obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
                 drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
                 j--;
@@ -1905,7 +1907,7 @@ function playGame() {
     while(i >= 0){
         if(k){
             if(shapes[i].position[2] < source_position[2]){
-                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+                shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
                 drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
                 i--;
             }
@@ -1915,7 +1917,7 @@ function playGame() {
             }
         }
         else{
-            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime;
+            shapes[i].position[2] += move * (1 - pause) * shapes[i].speed * deltaTime * speed_level[level];
             drawScene(gl, projectionMatrix, shapes[i], programInfo, buffer_shapes[i], deltaTime);
             i--;
         }
@@ -1923,7 +1925,7 @@ function playGame() {
     while(j >= 0){
         if(k){
             if(obstacles[j].position[2] < source_position[2]){
-                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+                obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
                 obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
                 drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
                 j--;
@@ -1934,7 +1936,7 @@ function playGame() {
             }
         }
         else{
-            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime;
+            obstacles[j].position[2] += move * (1 - pause) * obstacles[j].speed * deltaTime * speed_level[level];
             obstacles[j].rotationZ += (1 - pause) * obstacles[j].rotation * deltaTime;
             drawScene(gl, projectionMatrix, obstacles[j], programInfo, buffer_obstacles[j], deltaTime);
             j--;
