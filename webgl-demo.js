@@ -7,10 +7,10 @@ var pause = 0;
 var move = 1;
 var quit = 0;
 var toggleGrayscale = 0; //0 for Grayscale, 1 for Colourfull
-var shader = 0; //0 for original, 1 for shader
+var shader = 3;
 var toggleShader = 0; //0 for keep it as it is, 1 for toggle
-var toggleFlashTiles = 0;
-var flashTilesProb = 5; //one in flashTilesProb tiles will flash
+var toggleFlashTiles = 1;
+var flashTilesProb = 3; //one in flashTilesProb tiles will flash
 var texture = 0;
 var toggleTexture = 0;
 var textures_urls = [   'https://c1.staticflickr.com/9/8873/18598400202_3af67ef38f_q.jpg',
@@ -24,8 +24,8 @@ var frames = 0;
 var level_frames = 1200;
 var shakey_frames = 120;
 var score = 0;
-var game_over = 0;
-var amplitude = 0.007;
+var life = 2;
+var amplitude = 0.05;
 var frequency = 2;
 var current_rotation = 0;
 
@@ -1948,8 +1948,20 @@ function playGame() {
         requestAnimationFrame(render);
     }
     else if(!quit){
-        frames = 0;
-        requestAnimationFrame(shakey_screen);
+        life--;
+        obstacles.shift();
+        buffer_obstacles.shift();
+        count_obstacles--;
+        if(life > 0){
+            requestAnimationFrame(render);
+            toggleShader = 1;
+            blend = 1;
+            shader ^= 4;
+        }
+        else{
+            frames = 0;
+            requestAnimationFrame(shakey_screen);
+        }
     }
   }
   requestAnimationFrame(render);
@@ -1976,20 +1988,18 @@ function print_data(deltaTime){
 }
 
 function detect_collision(shapes, obstacles){
-    for (var i = 0; i < count_obstacles; i++){
-        if(obstacles[i].position[2] > -0.5*radius_object){
-            var theta = obstacles[i].rotationZ - Math.floor(obstacles[i].rotationZ / Math.PI) * Math.PI;
-            var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
-            if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
-                return true;
-            }
-            // theta = theta*180/Math.PI;
-            // alpha = alpha*180/Math.PI;
-            // var element = document.getElementById("alpha");
-            // element.innerHTML = "alpha: " + alpha.toString();
-            // element = document.getElementById("theta");
-            // element.innerHTML = "theta: " + theta.toString();
+    if(0 > obstacles[0].position[2] && obstacles[0].position[2] > -0.5*radius_object){
+        var theta = obstacles[0].rotationZ - Math.floor(obstacles[0].rotationZ / Math.PI) * Math.PI;
+        var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
+        if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
+            return true;
         }
+        // theta = theta*180/Math.PI;
+        // alpha = alpha*180/Math.PI;
+        // var element = document.getElementById("alpha");
+        // element.innerHTML = "alpha: " + alpha.toString();
+        // element = document.getElementById("theta");
+        // element.innerHTML = "theta: " + theta.toString();
     }
     return false;
 }
@@ -2581,7 +2591,7 @@ function drawScene(gl, projectionMatrix, shape, programInfo, buffers, deltaTime)
       source_position[1],
       source_position[2]);
   gl.uniform1i(programInfo.uniformLocations.samplerTexture, 0);
-  gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
+  gl.uniform1f(programInfo.uniformLocations.fragmentAlpha, shape.alpha);
   // gl.uniform1i(programInfo.uniformLocations.fragmentAlpha, 1.0);
 
   {
