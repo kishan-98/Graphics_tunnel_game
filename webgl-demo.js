@@ -41,7 +41,7 @@ var current_rotation = 0;
 // Shapes global variables
 
 var radius_object = 3;
-var count_shapes = 15;
+var count_shapes = 25;
 var shapes_offset = 15*radius_object;
 var remove_offset = 5*radius_object;
 var count_obstacles = 2;
@@ -2204,6 +2204,7 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[65]){
             // A Key
             source_position[0] -= light_source.speed / speed * 3;
+            source_position[0] = Math.max(source_position[0], -2 * radius_object);
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0.0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;
@@ -2218,6 +2219,7 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[68]){
             // D Key
             source_position[0] += light_source.speed / speed * 3;
+            source_position[0] = Math.min(source_position[0], 2 * radius_object);
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;
@@ -2232,6 +2234,7 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[81]){
             // Q Key
             source_position[1] += light_source.speed / speed * 3;
+            source_position[1] = Math.min(source_position[1], 2 * radius_object);
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0.0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;
@@ -2246,6 +2249,7 @@ function handleKeys(shapes, obstacles, light_source){
         if(statusKeys[69]){
             // E Key
             source_position[1] -= light_source.speed / speed * 3;
+            source_position[1] = Math.max(source_position[1], -2 * radius_object);
             light_source.position = [source_position[0], source_position[1], source_position[2]];
             if(source_position[2] < 0){
                 light_source.position[2] = source_position[2] - 1.0*radius_object;

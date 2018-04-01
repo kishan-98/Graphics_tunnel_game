@@ -4,7 +4,10 @@ Tunnel Rush
 
 ********************************************************************
 Run this command if you are opening the webgl in chrome
+FOR MAC OSX
 open -a Google\ Chrome --args --disable-web-security --user-data-dir
+FOR Linux
+google-chrome --disable-web-security
 ********************************************************************
 
 Key Console:
