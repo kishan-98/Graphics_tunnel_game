@@ -1140,9 +1140,15 @@ function create_octagon1(radius){
 function create_cuboid(radius){
     var len = radius * Math.tan(Math.PI/8)/3, height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    var blendAlpha = 0.5;
+    var blendAlpha = 0.2;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
       // Right face
       len, height, wid,
       len, height, -wid,
@@ -1172,15 +1178,15 @@ function create_cuboid(radius){
       len, height, wid,
       len, -height, wid,
       -len, -height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      len, -height, -wid,
-      -len, -height, -wid,
     ],
 
     'normals' : [
+      // Back face
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+
       // Right face
       radius, 0, 0,
       radius, 0, 0,
@@ -1210,26 +1216,26 @@ function create_cuboid(radius){
       0, 0, radius,
       0, 0, radius,
       0, 0, radius,
-
-      // Back face
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
     ],
 
     'alpha' : blendAlpha,
 
     'faceColors' : [
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Bottom face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
     'textures' : [
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1255,12 +1261,6 @@ function create_cuboid(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -1268,12 +1268,12 @@ function create_cuboid(radius){
     ],
 
     'indices' : [
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // bottom
-      16, 17, 18,     16, 18, 19,   // front
-      20, 21, 22,     20, 22, 23,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // bottom
+      20, 21, 22,     20, 22, 23,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -1291,10 +1291,16 @@ function create_cuboid(radius){
 function create_2triangles(radius){
     var len = radius * Math.tan(Math.PI/8), height = radius, wid = radius * Math.tan(Math.PI/8)/50;
     var type = Math.floor(Math.random()*2)*2 - 1;
-    var blendAlpha = 0.5;
+    var blendAlpha = 0.2;
     return {'position'  : [0, 0, -20*radius],
     'positions' : [
       // Top triangle
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      0, 0, -wid,
+      len, height, -wid,
+
       // Right face
       0, 0, wid,
       0, 0, -wid,
@@ -1318,14 +1324,14 @@ function create_2triangles(radius){
       len, height, wid,
       0, 0, wid,
       len, height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      0, 0, -wid,
-      len, height, -wid,
 
       // Bottom triangle
+      // Back face
+      -len, -height, -wid,
+      len, -height, -wid,
+      0, 0, -wid,
+      len, -height, -wid,
+
       // Right face
       0, 0, wid,
       0, 0, -wid,
@@ -1349,16 +1355,16 @@ function create_2triangles(radius){
       len, -height, wid,
       0, 0, wid,
       len, -height, wid,
-
-      // Back face
-      -len, -height, -wid,
-      len, -height, -wid,
-      0, 0, -wid,
-      len, -height, -wid,
     ],
 
     'normals' : [
       // Top triangle
+      // Back face
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+      0, 0, -1,
+
       // Right face
       Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
       Math.cos(-Math.PI/8), Math.cos(-Math.PI/8), 0,
@@ -1383,13 +1389,13 @@ function create_2triangles(radius){
       0, 0, 1,
       0, 0, 1,
 
+      // Bottom triangle
       // Back face
       0, 0, -1,
       0, 0, -1,
       0, 0, -1,
       0, 0, -1,
 
-      // Bottom triangle
       // Right face
       Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
       Math.cos(Math.PI/8), Math.cos(Math.PI/8), 0,
@@ -1413,33 +1419,33 @@ function create_2triangles(radius){
       0, 0, 1,
       0, 0, 1,
       0, 0, 1,
-
-      // Back face
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
-      0, 0, -1,
     ],
 
     'alpha' : blendAlpha,
 
     'faceColors' : [
       // Top triangle
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       // Bottom triangle
+      [1.0,  0.0,  0.0,  1.0],    // Back face: red
       [1.0,  0.0,  0.0,  1.0],    // Right face: red
       [1.0,  0.0,  0.0,  1.0],    // Left face: red
       [1.0,  0.0,  0.0,  1.0],    // Top face: red
       [1.0,  0.0,  0.0,  1.0],    // Front face: red
-      [1.0,  0.0,  0.0,  1.0],    // Back face: red
     ],
 
     'textures' : [
       // Top triangle
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1459,18 +1465,18 @@ function create_2triangles(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
       1, 0,
 
       // Bottom triangle
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1490,12 +1496,6 @@ function create_2triangles(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -1504,17 +1504,17 @@ function create_2triangles(radius){
 
     'indices' : [
       // Top triangle
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // front
-      16, 17, 18,     16, 18, 19,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // front
       // Bottom triangle
-      20, 21, 22,     20, 22, 23,   // right
-      24, 25, 26,     24, 26, 27,    // left
-      28, 29, 30,     28, 30, 31,   // top
-      32, 33, 34,     32, 34, 35,   // front
-      36, 37, 38,     36, 38, 39,   // back
+      20, 21, 22,     20, 22, 23,   // back
+      24, 25, 26,     24, 26, 27,   // right
+      28, 29, 30,     28, 30, 31,   // left
+      32, 33, 34,     32, 34, 35,   // top
+      36, 37, 38,     36, 38, 39,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -1534,6 +1534,12 @@ function create_light_source(radius){
     var blendAlpha = 1.0;
     return {'position'  : [0.0, 0.5*radius_object, -2*radius_object],
     'positions' : [
+      // Back face
+      -len, height, -wid,
+      len, height, -wid,
+      len, -height, -wid,
+      -len, -height, -wid,
+
       // Right face
       len, height, wid,
       len, height, -wid,
@@ -1563,15 +1569,15 @@ function create_light_source(radius){
       len, height, wid,
       len, -height, wid,
       -len, -height, wid,
-
-      // Back face
-      -len, height, -wid,
-      len, height, -wid,
-      len, -height, -wid,
-      -len, -height, -wid,
     ],
 
     'normals' : [
+      // Back face
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+      0, 0, -radius,
+
       // Right face
       radius, 0, 0,
       radius, 0, 0,
@@ -1601,26 +1607,26 @@ function create_light_source(radius){
       0, 0, radius,
       0, 0, radius,
       0, 0, radius,
-
-      // Back face
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
-      0, 0, -radius,
     ],
 
     'alpha' : blendAlpha,
 
     'faceColors' : [
+      [1.0,  1.0,  1.0,  1.0],    // Back face: white
       [1.0,  1.0,  1.0,  1.0],    // Right face: white
       [1.0,  1.0,  1.0,  1.0],    // Left face: white
       [1.0,  1.0,  1.0,  1.0],    // Top face: white
       [1.0,  1.0,  1.0,  1.0],    // Bottom face: white
       [1.0,  1.0,  1.0,  1.0],    // Front face: white
-      [1.0,  1.0,  1.0,  1.0],    // Back face: white
     ],
 
     'textures' : [
+      // Back face
+      0, 0,
+      0, 1,
+      1, 1,
+      1, 0,
+
       // Right face
       0, 0,
       0, 1,
@@ -1646,12 +1652,6 @@ function create_light_source(radius){
       1, 0,
 
       // Front face
-      0, 0,
-      0, 1,
-      1, 1,
-      1, 0,
-
-      // Back face
       0, 0,
       0, 1,
       1, 1,
@@ -1659,12 +1659,12 @@ function create_light_source(radius){
     ],
 
     'indices' : [
-      0,  1,  2,      0,  2,  3,    // right
-      4,  5,  6,      4,  6,  7,    // left
-      8,  9,  10,     8,  10, 11,   // top
-      12, 13, 14,     12, 14, 15,   // bottom
-      16, 17, 18,     16, 18, 19,   // front
-      20, 21, 22,     20, 22, 23,   // back
+      0,  1,  2,      0,  2,  3,    // back
+      4,  5,  6,      4,  6,  7,    // right
+      8,  9,  10,     8,  10, 11,   // left
+      12, 13, 14,     12, 14, 15,   // top
+      16, 17, 18,     16, 18, 19,   // bottom
+      20, 21, 22,     20, 22, 23,   // front
     ],
 
     'numComponentsPosition' : 3,
@@ -1988,7 +1988,7 @@ function print_data(deltaTime){
 }
 
 function detect_collision(shapes, obstacles){
-    if(0 > obstacles[0].position[2] && obstacles[0].position[2] > -0.5*radius_object){
+    if(obstacles.length > 0 && 0 > obstacles[0].position[2] && obstacles[0].position[2] > -0.5*radius_object){
         var theta = obstacles[0].rotationZ - Math.floor(obstacles[0].rotationZ / Math.PI) * Math.PI;
         var alpha = shapes[0].rotationZ - Math.floor(shapes[0].rotationZ / Math.PI) * Math.PI;
         if(-Math.PI / 8 <= theta && theta <= Math.PI / 8){
