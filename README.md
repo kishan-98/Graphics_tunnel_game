@@ -1,13 +1,21 @@
-# Graphics Assignment 3
-## Tunnel Rush with shaders
+# Tunnel Rush with Shaders
 
-** Run this command if you are opening the webgl in chrome **
-* FOR MAC OSX *
+Games are amazing to play with novel ideas and even better with better graphics. This game is simple with player to move across the tunnel and avoid hitting by the obstacles. Toggling through the different shader and texture would enable you to grasp the importance of `graphical properties` of the gameplay.
+
+## Getting Started
+
+Download the Git Repo in ZIP or clone it through the terminal and surf to the folder.
+
+### **Prerequisites**
+
+User must have a browser with supported WebGL.
+**If you are opening in Chrome, close all instances of Chrome and run this command**
+*FOR MAC OSX*
 open -a Google\ Chrome --args --disable-web-security --user-data-dir
-* FOR Linux *
+*FOR Linux*
 google-chrome --disable-web-security
 
-### Key Console:
+### **Key Console:**
 - Escape: Quit
 - P: Toggle pause
 - M: Toggle special pause
@@ -25,7 +33,7 @@ google-chrome --disable-web-security
 - [Up Arrow Key, Down Arrow Key, Left Arrow Key, Right Arrow Key, Z, X]: Move player in tunnel [Front, Back, Left Rotate, Right Rotate, Up, Down]
 - 0-9: Change source colour
 
-Source Colours:
+**Source Colours:**
 - 0 Black
 - 1 Blue
 - 2 Green
