@@ -9,10 +9,15 @@ Download the Git Repo in ZIP or clone it through the terminal and surf to the fo
 ### **Prerequisites**
 
 User must have a browser with supported WebGL.
+
 **If you are opening in Chrome, close all instances of Chrome and run this command**
+
 *FOR MAC OSX*
+
 open -a Google\ Chrome --args --disable-web-security --user-data-dir
+
 *FOR Linux*
+
 google-chrome --disable-web-security
 
 ### **Key Console:**
